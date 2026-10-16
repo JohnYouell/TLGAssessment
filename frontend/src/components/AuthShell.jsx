@@ -1,5 +1,5 @@
 export const AuthShell = ({ eyebrow, title, children, testId }) => (
-  <div className="grid min-h-[calc(100vh-74px)] lg:grid-cols-2" data-testid={testId}>
+  <div className="grid min-h-[calc(100vh-100px)] lg:grid-cols-2" data-testid={testId}>
     <div className="relative hidden lg:block">
       <img src="/auth.jpg" alt="" className="absolute inset-0 h-full w-full object-cover" />
       <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
