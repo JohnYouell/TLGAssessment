@@ -1,0 +1,20 @@
+{
+  "summary": "Checked that the Welcome page hero background image shows up, logged out only (no registration). Caching was disabled with CDP Network.setCacheDisabled and the page was reloaded at each size. At 1920x800, 1366x768 and 390x844, the hero's computed background-image is url(/hero-bg-v2.jpg), with background-size cover and background-position 100% 50%. The image request returned 200 (image/jpeg, 291081 bytes, 2560x1100) and the photo is visible behind 'BECOME LIKE CHRIST.' On desktop the overlay is display:none. On mobile it is display:block with rgba(0,0,0,0.65) and the photo is darkened. The served bundle.js references only hero-bg-v2.jpg. The legacy /hero-bg.jpg also returns 200 and is byte-identical. There were no image 404s. The only console errors were the expected 401s from /api/auth/me and /api/auth/refresh while logged out.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Welcome hero mobile (390px)", "issues": ["The shirt text in the photo ('ONE BODY / BUILT BY CHRIST') shows faintly through the 65% overlay directly behind the headline and body copy. It is readable but a little busy. Optional: use a center or right background position, or a stronger overlay, on small screens."]}
+    ]
+  },
+  "test_report_links": [],
+  "action_items": ["None blocking. The hero image works. If the user still doesn't see it, the likely cause is an old cached bundle requesting /hero-bg.jpg, which now also returns 200, so it should resolve on its own.", "Optional: the 401 console noise from /api/auth/me and /api/auth/refresh when logged out is expected but shows up as console errors."],
+  "critical_code_review_comments": ["Welcome.jsx hero uses an inline backgroundImage with an absolute /hero-bg-v2.jpg path. That is correct for CRA public assets."],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A", "frontend": "100%"},
+  "seed_data_creation": "none",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "The hero image is in frontend/public/hero-bg-v2.jpg; hero-bg.jpg is an identical copy. Do not register users (that sends real emails)."
+}
