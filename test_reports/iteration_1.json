@@ -1,0 +1,42 @@
+{
+  "summary": "First full run of Lord's Gym assessment app, backend and frontend. Backend: 14 pytest tests, 13 passed. The failure is brute-force lockout. Frontend: everything passed except one requested flow. After registering, the user is sent straight to /dashboard and never sees the /welcome gateway page. Things that worked: header nav switching between logged-in and logged-out links, hamburger menu at 390px, wrong-password error, login redirect, 7 cards (only #1 unlocked), In Progress status persisting after reload (also with localStorage cleared), submit disabled until all answered, result page, sequential unlock, a 403 error screen on a locked assessment URL, master locked overlay, master table after all 7 (Day1 1/1/1/0/0, Today 5/5/5/0/0, green +4 up arrows, total +12, 'Total out of 15'), sign out, and protected route redirect.",
+  "backend_issues": {
+    "critical": [
+      {"endpoint": "POST /api/auth/login", "issue": "Brute-force lockout does not work behind the ingress. The identifier uses request.client.host, which is the IP of whichever ingress/proxy pod handled the request, and that changes between requests. Failed attempts for one email were split across 10.39.128.26 and 10.64.133.134 (counts 2 and 4). After 6 bad attempts the 6th still returned 401 instead of 429.", "priority": "HIGH"}
+    ],
+    "minor": [
+      {"endpoint": "POST /api/assessments/{aid}/submit", "issue": "No 'answers' Field constraints: AnswersIn accepts any Dict[str,int] (invalid ids and out-of-range values are filtered out without an error). That is acceptable, but there is no max size on the dict."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "Register.jsx", "issue": "The welcome gateway is skipped after signup: the URL goes /register -> /welcome -> /dashboard immediately, so the 'Welcome to the gym, <first name>' / 'Begin Rep 1' page is never shown. Reproduced 3/3 times. Cause: once register() calls setUser, Register re-renders and its guard `if (user) return <Navigate to=\"/dashboard\" replace />` fires after navigate('/welcome'). Login.jsx probably has the same guard (harmless there because it goes to /dashboard anyway). Visiting /welcome directly while logged in shows the correct text and CTA.", "selector": "[data-testid=welcome-eyebrow]", "priority": "HIGH"}
+    ],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Mobile nav (390px), logged in", "issues": ["'Sign Out' (a <button>) is centered while the 'Dashboard' link is left-aligned. Add text-left / self-start to the button."]},
+      {"screen": "Mobile header", "issues": ["Byline is cut off ('Discipleship Training, One Rep at ...'). Consider wrapping onto 2 lines or a smaller font at <400px."]},
+      {"screen": "Mobile Master Results", "issues": ["The table needs horizontal scrolling (min-w 640px), so the Today and Change columns, including the green arrows, are hidden at first. Consider a stacked or compact layout on mobile."]}
+    ]
+  },
+  "test_report_links": ["/app/backend/tests/test_lords_gym_api.py", "/app/test_reports/pytest/pytest_results.xml"],
+  "action_items": [
+    "Fix the post-register redirect: in Register.jsx, only apply the `if (user) Navigate` guard when the user was already logged in on arrival (e.g. use a submitting/justRegistered ref), or navigate to /welcome in a way the guard does not override.",
+    "Fix the login lockout identifier: take the client IP from the first entry of X-Forwarded-For (fall back to request.client.host), or key the lockout on email only.",
+    "Left-align the Sign Out button in the mobile menu."
+  ],
+  "critical_code_review_comments": [
+    "Quiz.jsx merges answers as {...server, ...localStorage}, so a stale localStorage copy wins over the server. This is fine for now, but answers saved on another device can be overwritten.",
+    "MasterResults.jsx shows the locked overlay for any error (network or 500), not only 403. It should check for status 403.",
+    "Dashboard/AuthContext: logout only clears localStorage keys starting with lg-answers-*. Acceptable.",
+    "Backend password hashes use bcrypt ($2b$12$ confirmed). Cookies are httpOnly, Secure, SameSite=None (confirmed). CORS sends the exact origin with credentials=true (confirmed). There is no admin seeding (not applicable)."
+  ],
+  "updated_files": ["/app/backend/tests/test_lords_gym_api.py"],
+  "success_rate": {"backend": "93% (13/14)", "frontend": "~90% (all flows except post-register welcome redirect)"},
+  "test_credentials": "No seeded accounts; tests register TEST_user_*/TEST_ui* users with password test1234. test_smoke@example.com was left untouched.",
+  "seed_data_creation": "None kept. All TEST_ users, their progress docs and login_attempts were deleted after testing.",
+  "retest_needed": true,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Run: cd /app/backend && REACT_APP_BACKEND_URL=<url> python -m pytest tests/test_lords_gym_api.py. pytest.ini forces -n 2. Retest test_brute_force_lockout and the register -> /welcome flow (check data-testid=welcome-eyebrow text after submit and wait 3s). Clean up TEST_ users afterwards.",
+  "rca of the issue": "1) Welcome skip: Register.jsx re-renders with user set; its top-level `if (user) return <Navigate to='/dashboard'/>` runs after navigate('/welcome'). Navigation history captured: /register -> /welcome -> /dashboard. 2) Lockout: db.login_attempts held several identifier docs for the same email with different 10.x proxy IPs, so the count never reaches 5 on one doc."
+}

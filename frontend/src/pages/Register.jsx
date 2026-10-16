@@ -20,7 +20,7 @@ export default function Register() {
   const [form, setForm] = useState({ name: "", email: "", password: "", marketing_opt_in: false });
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
-  if (user) return <Navigate to="/dashboard" replace />;
+  if (user && !busy) return <Navigate to="/dashboard" replace />;
   const set = (k) => (v) => setForm((f) => ({ ...f, [k]: v }));
 
   const submit = async (e) => {

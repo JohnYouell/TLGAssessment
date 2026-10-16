@@ -46,10 +46,10 @@ export default function MasterResults() {
 
 const MasterTable = ({ data }) => (
   <div className="mt-12 overflow-x-auto border border-line" data-testid="master-table-wrapper">
-    <table className="w-full min-w-[640px] text-left" data-testid="master-table">
+    <table className="w-full min-w-[560px] text-left" data-testid="master-table">
       <thead className="bg-surface-2">
         <tr className="font-heading text-xs uppercase tracking-[0.18em] text-gold">
-          {["Sections", "Chapters", "Day 1 Score", "Today Score", "Change"].map((h) => <th key={h} className="px-4 py-4">{h}</th>)}
+          {["Sections", "Chapters", "Day 1 Score", "Today Score", "Change"].map((h) => <th key={h} className="px-3 py-4 sm:px-4">{h}</th>)}
         </tr>
       </thead>
       <tbody>

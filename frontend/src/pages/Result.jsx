@@ -5,6 +5,29 @@ import { motion } from "framer-motion";
 import { api, formatApiError } from "@/lib/api";
 import { Loader } from "@/components/Loader";
 
+const SectionBreakdown = ({ sections }) => (
+  <div className="mt-12" data-testid="result-sections">
+    <p className="eyebrow">Section Scores</p>
+    <div className="mt-4 grid gap-px bg-line">
+      {sections.map((s) => (
+        <div key={s.id} className="grid gap-3 bg-surface p-6 md:grid-cols-12 md:items-center" data-testid={`result-section-${s.id}`}>
+          <div className="md:col-span-4">
+            <p className="text-xs uppercase tracking-widest text-zinc-500">Section {s.id} · {s.chapters}</p>
+            <p className="mt-1 font-heading text-lg uppercase text-white">{s.title}</p>
+          </div>
+          <p className="font-heading text-3xl font-bold text-gold md:col-span-2" data-testid={`result-section-${s.id}-score`}>
+            {s.score}<span className="text-base text-zinc-500"> / {s.max}</span>
+          </p>
+          <div className="md:col-span-6">
+            <p className="font-heading uppercase tracking-wide text-white" data-testid={`result-section-${s.id}-designation`}>{s.designation}</p>
+            <p className="mt-1 text-sm text-zinc-400">{s.meaning}</p>
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+);
+
 export default function Result() {
   const { id } = useParams();
   const [res, setRes] = useState(null);
@@ -36,7 +59,7 @@ export default function Result() {
 
       <div className="mt-12 grid gap-px bg-line md:grid-cols-12">
         <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} className="bg-surface p-8 md:col-span-5">
-          <p className="eyebrow">Your Score</p>
+          <p className="eyebrow">{res.sections.length ? "Total Score" : "Your Score"}</p>
           <p className="mt-4 font-heading font-bold leading-none text-white" data-testid="result-score">
             <span className="text-8xl text-gold">{res.score}</span>
             <span className="text-3xl text-zinc-500"> / {res.max_score}</span>
@@ -45,11 +68,13 @@ export default function Result() {
           <p className="mt-2 text-xs text-zinc-500">{pct}% of maximum</p>
         </motion.div>
         <div className="bg-surface p-8 md:col-span-7">
-          <p className="eyebrow">Designation</p>
+          <p className="eyebrow">{res.sections.length ? "Overall Designation" : "Designation"}</p>
           <p className="mt-4 font-heading text-4xl font-bold uppercase text-white sm:text-5xl" data-testid="result-designation">{res.designation}</p>
           <p className="mt-6 text-base leading-relaxed text-zinc-300 md:text-lg" data-testid="result-meaning">{res.meaning}</p>
         </div>
       </div>
+
+      {res.sections.length > 0 && <SectionBreakdown sections={res.sections} />}
 
       <div className="mt-12">
         {next <= 7 ? (

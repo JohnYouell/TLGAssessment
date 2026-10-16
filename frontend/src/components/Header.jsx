@@ -22,7 +22,7 @@ const NavLinks = ({ onNavigate }) => {
   return (
     <>
       <Link to="/dashboard" onClick={onNavigate} className="nav-link" data-testid="nav-dashboard">Dashboard</Link>
-      <button type="button" onClick={handleSignOut} className="nav-link" data-testid="nav-sign-out">Sign Out</button>
+      <button type="button" onClick={handleSignOut} className="nav-link text-left" data-testid="nav-sign-out">Sign Out</button>
     </>
   );
 };
@@ -35,7 +35,7 @@ export const Header = () => {
       <div className="relative mx-auto flex max-w-7xl items-center justify-between gap-4 px-5 py-3 sm:px-8">
         <Link to="/" className="flex min-w-0 items-center gap-3" data-testid="header-logo-link">
           <img src="/logo.png" alt="The Lord's Gym logo" className="h-auto max-h-[50px] w-auto shrink-0" data-testid="header-logo" />
-          <span className="byline truncate text-sm sm:text-base" data-testid="header-byline">
+          <span className="byline text-xs leading-tight sm:text-base" data-testid="header-byline">
             Discipleship Training, One Rep at a Time
           </span>
         </Link>

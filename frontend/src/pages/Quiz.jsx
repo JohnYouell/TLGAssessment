@@ -7,6 +7,13 @@ import { useAuth } from "@/context/AuthContext";
 import { LikertScale } from "@/components/LikertScale";
 import { Loader } from "@/components/Loader";
 
+const SectionHeader = ({ s }) => (
+  <div className="mb-10 border-l-2 border-gold pl-4 pt-4" data-testid={`quiz-section-header-${s.id}`}>
+    <p className="eyebrow">Section {s.id} · {s.chapters}</p>
+    <h2 className="mt-1 font-heading text-2xl uppercase text-white">{s.title}</h2>
+  </div>
+);
+
 export default function Quiz() {
   const { id } = useParams();
   const { user } = useAuth();
@@ -90,6 +97,9 @@ export default function Quiz() {
       <ol className="mt-10 space-y-12">
         {quiz.questions.map((q, i) => (
           <li key={q.id} data-testid={`quiz-question-${q.id}`}>
+            {q.section && (i === 0 || quiz.questions[i - 1].section !== q.section) && (
+              <SectionHeader s={quiz.sections.find((s) => s.id === q.section)} />
+            )}
             <div className="flex gap-4">
               <span className="font-heading text-xl font-bold text-gold">{String(i + 1).padStart(2, "0")}</span>
               <p className="text-base text-white md:text-lg">{q.text}</p>

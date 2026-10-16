@@ -158,7 +158,8 @@ async def register(body: RegisterIn, response: Response):
 @api.post("/auth/login")
 async def login(body: LoginIn, request: Request, response: Response):
     email = body.email.lower()
-    ident = f"{request.client.host if request.client else 'x'}:{email}"
+    fwd = request.headers.get("x-forwarded-for", "").split(",")[0].strip()
+    ident = f"{fwd or (request.client.host if request.client else 'x')}:{email}"
     attempt = await db.login_attempts.find_one({"identifier": ident})
     if attempt and attempt.get("count", 0) >= 5:
         locked_at = datetime.fromisoformat(attempt["last"])
@@ -220,11 +221,26 @@ def clean_answers(a, answers):
     return {k: v for k, v in answers.items() if k in valid and 1 <= v <= SCALE_MAX}
 
 
+def tier(tiers, score):
+    return [t for t in tiers if score >= t["min"]][-1]
+
+
+def section_max(aid, sid):
+    return sum(SCALE_MAX for q in ASSESS_BY_ID[aid]["questions"] if q["section"] == sid)
+
+
 def result_payload(a, p: Progress):
+    sections = []
+    if a["has_sections"]:
+        for s in SECTIONS:
+            score = p.section_scores.get(str(s["id"]), 0)
+            t = tier(a["section_tiers"], score)
+            sections.append({**s, "score": score, "max": section_max(a["id"], s["id"]),
+                             "designation": t["label"], "meaning": t["meaning"]})
     return {
         "assessment_id": a["id"], "title": a["title"], "subtitle": a["subtitle"],
         "score": p.score, "max_score": p.max_score, "designation": p.designation,
-        "meaning": p.meaning, "completed_at": p.completed_at,
+        "meaning": p.meaning, "completed_at": p.completed_at, "sections": sections,
     }
 
 
@@ -255,7 +271,8 @@ async def get_one(aid: int, user: User = Depends(get_current_user)):
     p = prog.get(aid)
     return {
         "id": a["id"], "title": a["title"], "subtitle": a["subtitle"], "description": a["description"],
-        "questions": [{"id": q["id"], "text": q["text"]} for q in a["questions"]],
+        "questions": [{"id": q["id"], "text": q["text"], "section": q["section"]} for q in a["questions"]],
+        "sections": SECTIONS if a["has_sections"] else [],
         "answers": p.answers if p else {}, "status": p.status if p else "not_started",
     }
 
@@ -290,12 +307,12 @@ async def submit(aid: int, body: AnswersIn, user: User = Depends(get_current_use
         raise HTTPException(400, "Please answer every question before submitting")
     score = sum(answers.values())
     max_score = len(a["questions"]) * SCALE_MAX
-    pct = score / max_score * 100
-    band = [b for b in a["bands"] if pct >= b["min_pct"]][-1]
+    band = tier(a["total_tiers"], score)
     section_scores: Dict[str, int] = {}
     for q in a["questions"]:
-        key = str(q["section"])
-        section_scores[key] = section_scores.get(key, 0) + answers[q["id"]]
+        if q["section"]:
+            key = str(q["section"])
+            section_scores[key] = section_scores.get(key, 0) + answers[q["id"]]
     p = Progress(user_id=user.id, assessment_id=aid, answers=answers, status="completed", score=score,
                  max_score=max_score, designation=band["label"], meaning=band["meaning"],
                  section_scores=section_scores, completed_at=now_iso(), updated_at=now_iso())
@@ -310,10 +327,6 @@ async def get_result(aid: int, user: User = Depends(get_current_user)):
     if not p or p.status != "completed":
         raise HTTPException(404, "Result not available yet")
     return result_payload(a, p)
-
-
-def section_max(aid, sid):
-    return sum(SCALE_MAX for q in ASSESS_BY_ID[aid]["questions"] if q["section"] == sid)
 
 
 @api.get("/master-results")
@@ -350,6 +363,8 @@ async def startup():
     await db.users.create_index("email", unique=True)
     await db.login_attempts.create_index("identifier")
     await db.progress.create_index([("user_id", 1), ("assessment_id", 1)], unique=True)
+    for a in ASSESSMENTS:
+        await db.assessments.replace_one({"_id": a["id"]}, {"_id": a["id"], **{k: v for k, v in a.items() if k != "id"}}, upsert=True)
 
 
 @app.on_event("shutdown")
