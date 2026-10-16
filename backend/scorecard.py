@@ -59,6 +59,7 @@ def _header(c, name, date_str):
     c.drawString(M, H - 168, "TRAINING SCORECARD")
     c.setFillColor(GREY)
     c.setFont("Manrope", 10.5)
+    name = name if len(name) <= 40 else name[:39] + "…"
     c.drawString(M, H - 188, f"Athlete: {name}    |    Issued: {date_str}")
     c.drawRightString(W - M, H - 188, "Day 1 baseline vs. Today")
 
@@ -136,13 +137,13 @@ def _tiles(c, data, top):
     return top - 86
 
 
-def _footer(c, meaning):
+def _footer(c, meaning, top):
     c.setFillColor(INK)
     c.setFont("Oswald", 11)
-    c.drawString(M, 128, "WHAT YOUR TODAY SCORE MEANS")
+    c.drawString(M, top - 36, "WHAT YOUR TODAY SCORE MEANS")
     c.setFillColor(GREY)
     c.setFont("Manrope", 10)
-    c.drawString(M, 111, meaning)
+    c.drawString(M, top - 53, meaning)
     c.setStrokeColor(GOLD)
     c.setLineWidth(1)
     c.line(M, 80, W - M, 80)
@@ -160,8 +161,8 @@ def build_scorecard_pdf(name, date_str, data):
     c.setTitle("The Lord's Gym - Training Scorecard")
     _header(c, name, date_str)
     bottom = _table(c, data, H - 215)
-    _tiles(c, data, bottom - 28)
-    _footer(c, data["today_meaning"])
+    tiles_bottom = _tiles(c, data, bottom - 28)
+    _footer(c, data["today_meaning"], tiles_bottom)
     c.showPage()
     c.save()
     return buf.getvalue()

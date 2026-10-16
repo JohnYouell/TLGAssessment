@@ -21,11 +21,13 @@ Readers of the book working through the discipleship assessments; small-group le
 - Result page: total, designation, meaning; per-section breakdown for A1/A7
 - Master Results: locked overlay, then the Day 1 (A1) vs Today (A7) table, total out of 125, colored change arrows; mobile-friendly
 - All 115 verbatim questions and tier rules hardcoded
+- Signup checkbox "Opt-in to the Discipleship Training E-Marketing List" saved as boolean `marketing_opt_in` on the user, logged in the browser console and the backend log (Brevo sync to come; no internal email list)
+- "Download Your Training Scorecard" on Master Results: a branded, print-friendly PDF (reportlab) from GET /api/master-results/scorecard
 
 ## Assumptions
 - A1's overall total uses the same /125 total tiers as A7
 - Review tiers (A2-A6) reuse the same meaning text as the matching tier labels
 
 ## Backlog
-- P1: Email provider for opt-in list (Resend/SendGrid), password reset
+- P1: Send marketing_opt_in to Brevo via its API at signup, password reset
 - P2: Printable/PDF master results, retake option, admin view of opt-ins

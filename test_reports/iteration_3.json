@@ -1,0 +1,34 @@
+{
+  "summary": "Iteration 3 tested the marketing_opt_in capture and the PDF Training Scorecard. Backend: the new tests/test_lords_gym_scorecard.py has 7 tests, all pass. They check that opt-in true and false are stored in the register response, /auth/me and db.users; that opt-in defaults to false when omitted; that it is still returned on login; that the scorecard returns 401 unauthenticated; that it returns 403 with 0 or 1 of 7 assessments completed; and that it returns 200 application/pdf with 'attachment; filename=\"Lords-Gym-Training-Scorecard.pdf\"' and a %PDF body. The PDF text was parsed with pymupdf. It contains all 5 section titles and chapters, every 'Day1 / max' and 'Today / max' value, changes of +20/+10/-10/-20, TOTAL OUT OF 125 and the user's name. Full suite: 35 passed, 1 skipped (the old test_smoke user no longer exists). Every register writes the backend log line 'Registered user <email> marketing_opt_in=True/False'. Frontend: the checkbox label is exactly 'Opt-in to the Discipleship Training E-Marketing List'. Checked and unchecked registrations log '[signup] marketing_opt_in: true' / 'false', land on /welcome (welcome-eyebrow visible), and Mongo stores true / false. Dashboard loads. A new user sees the master locked state with no download button, and the scorecard API returns 403. test_pdf user: Master Results shows 'Download Your Training Scorecard'. Clicking it triggers a download named Lords-Gym-Training-Scorecard.pdf (141 KB, a valid PDF). The button goes back to enabled afterwards. The button is full-width on 390px mobile. The rendered PDF was checked visually: black and gold athletic header with logo, a full grid, a gold total row, 3 tiles (Day1, Today, Growth), the meaning text and a scripture footer. It is clean and print-friendly.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "GET /api/master-results/scorecard", "issue": "The athlete line uses drawString with no truncation. Names may be up to 100 characters, and a name over about 60 characters overlaps the right-aligned 'Day 1 baseline vs. Today' text. Non-Latin names may show missing glyphs because the PDF uses the bundled Manrope font."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Mobile Master Results", "issues": ["The download button label wraps onto 2 lines at 390px. Acceptable, but it could be shortened or use a smaller letter-spacing on mobile."]}
+    ]
+  },
+  "test_report_links": ["/app/backend/tests/test_lords_gym_scorecard.py", "/app/backend/tests/test_lords_gym_content.py", "/app/backend/tests/test_lords_gym_api.py", "/app/test_reports/pytest/pytest_results.xml"],
+  "action_items": [
+    "LOW: In scorecard.py, truncate or ellipsize long athlete names (or drop the right-aligned subtitle when they would overlap).",
+    "LOW: In MasterResults.jsx DownloadButton, append the anchor to document.body before click() and delay URL.revokeObjectURL (for example setTimeout 1000ms). This makes the download reliable in Safari and Firefox."
+  ],
+  "critical_code_review_comments": [
+    "MasterResults.jsx revokes the object URL synchronously right after a.click() on an anchor that is not attached to the DOM. This works in Chromium (verified), but it is a known flakiness source in Safari and Firefox.",
+    "The scorecard endpoint correctly reuses compute_master, so the 403 gating is the same as the table. The content-disposition header and media type are correct.",
+    "Opt-in is captured end to end. The Pydantic default is false, it is stored on the user doc, exposed in public(), and logged on the backend and in the browser console. No internal email list was built, as requested.",
+    "Carried over: MasterResults shows the locked overlay for any error (not only 403)."
+  ],
+  "updated_files": ["/app/backend/tests/test_lords_gym_scorecard.py (new)"],
+  "success_rate": {"backend": "100% (35/35, 1 skipped)", "frontend": "100%"},
+  "test_credentials": "test_pdf@example.com / test1234 was used and then DELETED as requested. No accounts remain.",
+  "seed_data_creation": "None kept. Deleted 41 TEST_/test_ users (including test_pdf), 63 progress docs and 3 login_attempts. db.users and db.progress are now empty.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Run: cd /app/backend && REACT_APP_BACKEND_URL=<url> python -m pytest tests/. test_smoke_user_results skips because there is no smoke user. Scorecard tests use pymupdf (installed) to parse PDF text. To fast-complete all 7 assessments, see complete_all() in test_lords_gym_scorecard.py. The register -> /welcome regression from iteration 2 is now fixed (verified twice)."
+}
