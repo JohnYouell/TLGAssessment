@@ -86,13 +86,15 @@ def _site(path):
     return f"{os.environ['SITE_URL'].rstrip('/')}{path}"
 
 
-def branded_html(heading, paragraphs, cta_text, cta_url):
-    logo = os.environ["EMAIL_LOGO_URL"]
+def branded_html(heading, paragraphs, cta_text, cta_url, logo=None, bg_url=None):
+    logo = logo or os.environ["EMAIL_LOGO_URL"]
+    bg_attr = f' background="{bg_url}"' if bg_url else ""
+    bg_css = f"background-image:url('{bg_url}');background-size:cover;background-position:center;" if bg_url else ""
     divider = '<tr><td style="padding:0 40px"><div style="height:2px;background:#D4AF37;line-height:2px;font-size:0">&nbsp;</div></td></tr>'
     body = "".join(f"<p {P_STYLE}>{t}</p>" for t in paragraphs)
     return f"""<!DOCTYPE html><html><body style="margin:0;padding:0;background:#0a0a0a">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#0a0a0a"><tr><td align="center" style="padding:32px 12px">
-<table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#0a0a0a;border:1px solid #2a2a2a">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0"{bg_attr} style="background-color:#0a0a0a;{bg_css}"><tr><td align="center" style="padding:32px 12px">
+<table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:{'rgba(10,10,10,0.72)' if bg_url else '#0a0a0a'};border:1px solid #2a2a2a">
 <tr><td align="center" style="padding:40px 40px 28px"><img src="{logo}" alt="The Lord's Gym" width="140" style="display:block;width:140px;max-width:140px;height:auto;border:0"></td></tr>
 {divider}
 <tr><td style="padding:36px 40px 8px">
@@ -103,7 +105,7 @@ def branded_html(heading, paragraphs, cta_text, cta_url):
 <a href="{cta_url}" style="display:inline-block;background:#D4AF37;color:#000000;font-family:Arial,Helvetica,sans-serif;font-size:16px;font-weight:900;letter-spacing:3px;text-decoration:none;padding:18px 44px;border-radius:2px">{cta_text}</a>
 </td></tr>
 {divider}
-<tr><td align="center" style="padding:24px 40px 36px;color:#a1a1aa;font-family:Georgia,serif;font-size:13px;letter-spacing:2px">DISCIPLESHIP TRAINING, ONE REP AT A TIME</td></tr>
+<tr><td align="center" style="padding:24px 40px 36px;color:#c0c0c8;font-family:Georgia,serif;font-size:13px;letter-spacing:2px">DISCIPLESHIP TRAINING, ONE REP AT A TIME</td></tr>
 </table></td></tr></table></body></html>"""
 
 
@@ -145,6 +147,22 @@ async def send_welcome_email(email, name):
 
 async def send_reminder_email(email, name):
     return await _send(email, name, "Don’t leave the weight on the rack", reminder_html())
+
+
+def nudge_html():
+    return branded_html(
+        "Consistency is where the growth happens.",
+        [
+            "You’ve already stepped onto the training floor and put in the reps on your discipleship journey. But spiritual strength isn’t built in a single workout—it’s forged through staying with the routine over the long haul.",
+            "Don’t stop training partway through. Your next rep is waiting for you on the dashboard. Let’s finish the course and unlock your final Master Growth Review.",
+        ],
+        "RETURN TO THE TRAINING FLOOR", _site("/dashboard"),
+        logo=_site("/email-logo-gold.png"), bg_url=_site("/email-texture.jpg"),
+    )
+
+
+async def send_nudge_email(email, name):
+    return await _send(email, name, "Consistency is where the growth happens", nudge_html())
 
 
 async def send_scorecard_email(email, name, data, pdf_bytes):

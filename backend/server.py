@@ -21,7 +21,7 @@ from assessments_config import (
     ASSESSMENTS, SECTIONS, SCALE_MAX, BASELINE_ASSESSMENT_ID, FINAL_ASSESSMENT_ID, TOTAL_125_TIERS,
 )
 from scorecard import build_scorecard_pdf
-from brevo import create_contact, send_scorecard_email, send_welcome_email, send_reminder_email
+from brevo import create_contact, send_scorecard_email, send_welcome_email, send_reminder_email, send_nudge_email
 import hmac
 
 client = AsyncIOMotorClient(os.environ["MONGO_URL"])
@@ -60,6 +60,7 @@ class User(BaseDocument):
     password_hash: str = ""
     marketing_opt_in: bool = False
     created_at: str = ""
+    last_activity_at: str = ""
 
     def public(self):
         return {"id": self.id, "name": self.name, "email": self.email, "marketing_opt_in": self.marketing_opt_in}
@@ -131,6 +132,10 @@ def decode(token, ttype):
     return payload["sub"]
 
 
+async def touch(user_id):
+    await db.users.update_one({"_id": ObjectId(user_id)}, {"$set": {"last_activity_at": now_iso()}, "$unset": {"nudge_sent_at": ""}})
+
+
 async def get_current_user(request: Request) -> User:
     token = request.cookies.get("access_token")
     auth = request.headers.get("Authorization", "")
@@ -151,7 +156,7 @@ async def register(body: RegisterIn, response: Response, background: BackgroundT
     if await db.users.find_one({"email": email}):
         raise HTTPException(400, "An account with this email already exists")
     user = User(name=body.name.strip(), email=email, password_hash=hash_password(body.password),
-                marketing_opt_in=body.marketing_opt_in, created_at=now_iso())
+                marketing_opt_in=body.marketing_opt_in, created_at=now_iso(), last_activity_at=now_iso())
     res = await db.users.insert_one(user.to_mongo())
     user.id = str(res.inserted_id)
     logger.info("Registered user %s marketing_opt_in=%s", email, user.marketing_opt_in)
@@ -177,6 +182,7 @@ async def login(body: LoginIn, request: Request, response: Response):
         await db.login_attempts.update_one({"identifier": ident}, {"$inc": {"count": 1}, "$set": {"last": now_iso()}}, upsert=True)
         raise HTTPException(401, "Invalid email or password")
     await db.login_attempts.delete_one({"identifier": ident})
+    await touch(user.id)
     set_auth_cookies(response, user.id)
     return user.public()
 
@@ -292,6 +298,7 @@ async def save_progress(aid: int, body: AnswersIn, user: User = Depends(get_curr
     if aid in prog and prog[aid].status == "completed":
         raise HTTPException(400, "Assessment already completed")
     answers = clean_answers(a, body.answers)
+    await touch(user.id)
     await db.progress.update_one(
         {"user_id": user.id, "assessment_id": aid},
         {"$set": {"answers": answers, "status": "in_progress", "updated_at": now_iso()}},
@@ -322,6 +329,7 @@ async def submit(aid: int, body: AnswersIn, user: User = Depends(get_current_use
     p = Progress(user_id=user.id, assessment_id=aid, answers=answers, status="completed", score=score,
                  max_score=max_score, designation=band["label"], meaning=band["meaning"],
                  section_scores=section_scores, completed_at=now_iso(), updated_at=now_iso())
+    await touch(user.id)
     await db.progress.update_one({"user_id": user.id, "assessment_id": aid}, {"$set": p.to_mongo()}, upsert=True)
     return result_payload(a, p)
 
@@ -386,9 +394,24 @@ async def run_day2_reminders():
     logger.info("Day 2 reminders sent: %s", sent)
 
 
-@api.post("/cron/day2-reminder")
-async def cron_day2_reminder(request: Request, background: BackgroundTasks):
-    # Cron endpoints must ack 2xx immediately; enqueue/background the actual work.
+async def run_journey_nudges():
+    cutoff = (datetime.now(timezone.utc) - timedelta(days=7)).isoformat()
+    counts = {d["_id"]: d["n"] async for d in db.progress.aggregate([
+        {"$match": {"status": "completed"}}, {"$group": {"_id": "$user_id", "n": {"$sum": 1}}}])}
+    sent = 0
+    async for doc in db.users.find({"last_activity_at": {"$lte": cutoff}, "nudge_sent_at": {"$exists": False}}):
+        user = User.from_mongo(doc)
+        if not 1 <= counts.get(user.id, 0) < len(ASSESSMENTS):
+            continue
+        claimed = await db.users.update_one(
+            {"_id": doc["_id"], "nudge_sent_at": {"$exists": False}}, {"$set": {"nudge_sent_at": now_iso()}})
+        if claimed.modified_count:
+            await send_nudge_email(user.email, user.name)
+            sent += 1
+    logger.info("Journey nudges sent: %s", sent)
+
+
+async def accept_cron(request: Request, background: BackgroundTasks, job):
     auth = request.headers.get("Authorization", "")
     token = auth[7:] if auth.startswith("Bearer ") else ""
     if not token or not hmac.compare_digest(token, os.environ["WEBHOOK_CRON_SECRET"]):
@@ -400,10 +423,22 @@ async def cron_day2_reminder(request: Request, background: BackgroundTasks):
     run_id = request.headers.get("X-Webhook-Id") or (envelope or {}).get("run_id")
     if not run_id:
         raise HTTPException(400, "Missing run_id")
-    res = await db.cron_runs.update_one({"_id": run_id}, {"$setOnInsert": {"at": now_iso()}}, upsert=True)
+    res = await db.cron_runs.update_one({"_id": f"{job.__name__}:{run_id}"}, {"$setOnInsert": {"at": now_iso()}}, upsert=True)
     if res.upserted_id is not None:
-        background.add_task(run_day2_reminders)
+        background.add_task(job)
     return {"accepted": True}
+
+
+@api.post("/cron/day2-reminder")
+async def cron_day2_reminder(request: Request, background: BackgroundTasks):
+    # Cron endpoints must ack 2xx immediately; enqueue/background the actual work.
+    return await accept_cron(request, background, run_day2_reminders)
+
+
+@api.post("/cron/journey-nudge")
+async def cron_journey_nudge(request: Request, background: BackgroundTasks):
+    # Cron endpoints must ack 2xx immediately; enqueue/background the actual work.
+    return await accept_cron(request, background, run_journey_nudges)
 
 
 app.include_router(api)
