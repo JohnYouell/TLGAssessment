@@ -21,7 +21,7 @@ from assessments_config import (
     ASSESSMENTS, SECTIONS, SCALE_MAX, BASELINE_ASSESSMENT_ID, FINAL_ASSESSMENT_ID, TOTAL_125_TIERS,
 )
 from scorecard import build_scorecard_pdf
-from brevo import create_contact, send_scorecard_email
+from brevo import create_contact, send_scorecard_email, send_welcome_email
 
 client = AsyncIOMotorClient(os.environ["MONGO_URL"])
 db = client[os.environ["DB_NAME"]]
@@ -154,6 +154,7 @@ async def register(body: RegisterIn, response: Response, background: BackgroundT
     res = await db.users.insert_one(user.to_mongo())
     user.id = str(res.inserted_id)
     logger.info("Registered user %s marketing_opt_in=%s", email, user.marketing_opt_in)
+    background.add_task(send_welcome_email, email, user.name)
     if user.marketing_opt_in:
         background.add_task(create_contact, email, user.name)
     set_auth_cookies(response, user.id)

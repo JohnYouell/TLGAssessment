@@ -23,7 +23,7 @@ Readers of the book working through the discipleship assessments; small-group le
 - All 115 verbatim questions and tier rules hardcoded
 - Signup checkbox "Opt-in to the Discipleship Training E-Marketing List" saved as boolean `marketing_opt_in` on the user, logged in the browser console and the backend log (Brevo sync to come; no internal email list)
 - "Download Your Training Scorecard" on Master Results: a branded, print-friendly PDF (reportlab) from GET /api/master-results/scorecard
-- Brevo (backend/brevo.py, httpx): an opt-in signup creates a contact (FIRSTNAME, LASTNAME, OPT_IN=true) in list ID 2; downloading the scorecard also sends a transactional email with the HTML grid and the PDF attached. Both run in the background and never block the user. Sender: john.youell@newlifeokc.org as "The Lord's Gym"
+- Brevo (backend/brevo.py, httpx): an opt-in signup creates a contact (FIRSTNAME, LASTNAME, OPT_IN=true) in the list "discipleship training e-marketing" (ID 3); downloading the scorecard also sends a transactional email with the HTML grid and the PDF attached. Every new account gets a black-and-gold "Welcome to the Training Floor" email with a START REP ONE button linking to SITE_URL/dashboard (update SITE_URL on deploy). All Brevo calls run in the background and never block the user. Sender: john.youell@newlifeokc.org as "The Lord's Gym"
 - Header logo switched to the white TLG logo (public/logo-white.png)
 
 ## Assumptions

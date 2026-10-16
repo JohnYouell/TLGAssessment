@@ -78,6 +78,39 @@ def scorecard_html(name, data):
 </div></div>"""
 
 
+def welcome_html():
+    dashboard = f"{os.environ['SITE_URL'].rstrip('/')}/dashboard"
+    logo = os.environ["EMAIL_LOGO_URL"]
+    divider = '<tr><td style="padding:0 40px"><div style="height:2px;background:#D4AF37;line-height:2px;font-size:0">&nbsp;</div></td></tr>'
+    p = 'style="margin:0 0 18px;color:#ffffff;font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.65"'
+    return f"""<!DOCTYPE html><html><body style="margin:0;padding:0;background:#0a0a0a">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#0a0a0a"><tr><td align="center" style="padding:32px 12px">
+<table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#0a0a0a;border:1px solid #2a2a2a">
+<tr><td align="center" style="padding:40px 40px 28px"><img src="{logo}" alt="The Lord's Gym" width="140" style="display:block;width:140px;max-width:140px;height:auto;border:0"></td></tr>
+{divider}
+<tr><td style="padding:36px 40px 8px">
+<h1 style="margin:0 0 24px;color:#ffffff;font-family:Georgia,'Times New Roman',serif;font-size:28px;letter-spacing:1px;text-align:center">Welcome to the Training Floor.</h1>
+<p {p}>You have successfully registered your account for <strong style="color:#D4AF37">The Lord's Gym: Discipleship Training, One Rep at a Time</strong>. Your spiritual training regimen begins today. It is time to step out of the bleachers, face the weights, and commit to the daily work of growing in Christ.</p>
+<p {p}>Your first assignment is waiting.</p>
+</td></tr>
+<tr><td align="center" style="padding:16px 40px 40px">
+<a href="{dashboard}" style="display:inline-block;background:#D4AF37;color:#000000;font-family:Arial,Helvetica,sans-serif;font-size:16px;font-weight:900;letter-spacing:3px;text-decoration:none;padding:18px 44px;border-radius:2px">START REP ONE</a>
+</td></tr>
+{divider}
+<tr><td align="center" style="padding:24px 40px 36px;color:#a1a1aa;font-family:Georgia,serif;font-size:13px;letter-spacing:2px">DISCIPLESHIP TRAINING, ONE REP AT A TIME</td></tr>
+</table></td></tr></table></body></html>"""
+
+
+async def send_welcome_email(email, name):
+    payload = {
+        "sender": {"name": os.environ["BREVO_SENDER_NAME"], "email": os.environ["BREVO_SENDER_EMAIL"]},
+        "to": [{"email": email, "name": name}],
+        "subject": "Welcome to the Training Floor",
+        "htmlContent": welcome_html(),
+    }
+    return await _post("/smtp/email", payload)
+
+
 async def send_scorecard_email(email, name, data, pdf_bytes):
     payload = {
         "sender": {"name": os.environ["BREVO_SENDER_NAME"], "email": os.environ["BREVO_SENDER_EMAIL"]},
