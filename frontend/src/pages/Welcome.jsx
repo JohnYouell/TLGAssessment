@@ -15,9 +15,9 @@ export default function Welcome({ firstVisit = false }) {
   const name = user?.name?.split(" ")[0];
   return (
     <div data-testid="welcome-page">
-      <section className="relative overflow-hidden bg-black bg-cover bg-center bg-[image:var(--hero-sm)] md:bg-left md:bg-[image:var(--hero-lg)] lg:bg-right" style={{ "--hero-sm": "url(/hero-sm.jpg)", "--hero-lg": "url(/hero-bg-v2.jpg)" }} data-testid="welcome-hero">
+      <section className="relative overflow-hidden bg-black bg-cover bg-no-repeat bg-center bg-[image:var(--hero-sm)] max-md:bg-[length:100%_auto] max-md:bg-[position:center_360px] md:bg-left md:bg-[image:var(--hero-lg)] lg:bg-right" style={{ "--hero-sm": "url(/hero-sm.jpg)", "--hero-lg": "url(/hero-bg-v2.jpg)" }} data-testid="welcome-hero">
         <div aria-hidden="true" className="absolute inset-0 bg-black/30 lg:hidden" />
-        <div className="relative z-10 mx-auto flex max-w-7xl items-center justify-between gap-12 px-5 py-24 sm:px-8 lg:py-36">
+        <div className="relative z-10 mx-auto flex max-w-7xl items-center justify-between gap-12 px-5 pb-[460px] pt-24 sm:px-8 md:py-24 lg:py-36">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} className="max-w-2xl">
             <p className="eyebrow" data-testid="welcome-eyebrow">{firstVisit && name ? `Welcome to the gym, ${name}` : "The Lord's Gym · Assessment Series"}</p>
             <h1 className="mt-5 font-heading text-4xl font-bold uppercase leading-[0.95] text-white sm:text-5xl lg:text-6xl" data-testid="welcome-title">
