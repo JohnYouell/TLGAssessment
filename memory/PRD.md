@@ -25,6 +25,7 @@ Readers of the book working through the discipleship assessments; small-group le
 - "Download Your Training Scorecard" on Master Results: a branded, print-friendly PDF (reportlab) from GET /api/master-results/scorecard
 - Brevo (backend/brevo.py, httpx): an opt-in signup creates a contact (FIRSTNAME, LASTNAME, OPT_IN=true) in the list "discipleship training e-marketing" (ID 3); downloading the scorecard also sends a transactional email with the HTML grid and the PDF attached. Every new account gets a black-and-gold "Welcome to the Training Floor" email with a START REP ONE button linking to SITE_URL/dashboard (update SITE_URL on deploy). All Brevo calls run in the background and never block the user. Sender: john.youell@newlifeokc.org as "The Lord's Gym"
 - Header logo switched to the white TLG logo (public/logo-white.png)
+- Day 2 reminder: the hourly platform cron (.emergent/crons.yml, POST /api/cron/day2-reminder, Bearer WEBHOOK_CRON_SECRET, idempotent per run_id) emails readers whose account is 48+ hours old and who haven't completed A1. It is sent once per user (users.day2_reminder_sent_at), and the FINISH YOUR FIRST REP button links to /assessment/1. Login now returns users to the page they were trying to open.
 
 ## Assumptions
 - A1's overall total uses the same /125 total tiers as A7

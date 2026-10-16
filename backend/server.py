@@ -21,7 +21,8 @@ from assessments_config import (
     ASSESSMENTS, SECTIONS, SCALE_MAX, BASELINE_ASSESSMENT_ID, FINAL_ASSESSMENT_ID, TOTAL_125_TIERS,
 )
 from scorecard import build_scorecard_pdf
-from brevo import create_contact, send_scorecard_email, send_welcome_email
+from brevo import create_contact, send_scorecard_email, send_welcome_email, send_reminder_email
+import hmac
 
 client = AsyncIOMotorClient(os.environ["MONGO_URL"])
 db = client[os.environ["DB_NAME"]]
@@ -365,6 +366,44 @@ async def compute_master(user: User):
     total["change"] = total["today"] - total["day1"]
     total["max"] = sum(r["max"] for r in rows)
     return {"rows": rows, "total": total}
+
+
+async def run_day2_reminders():
+    cutoff = (datetime.now(timezone.utc) - timedelta(hours=48)).isoformat()
+    done = {d["user_id"] async for d in db.progress.find({"assessment_id": 1, "status": "completed"}, {"user_id": 1})}
+    sent = 0
+    async for doc in db.users.find({"created_at": {"$lte": cutoff}, "day2_reminder_sent_at": {"$exists": False}}):
+        user = User.from_mongo(doc)
+        if user.id in done:
+            continue
+        claimed = await db.users.update_one(
+            {"_id": doc["_id"], "day2_reminder_sent_at": {"$exists": False}},
+            {"$set": {"day2_reminder_sent_at": now_iso()}},
+        )
+        if claimed.modified_count:
+            await send_reminder_email(user.email, user.name)
+            sent += 1
+    logger.info("Day 2 reminders sent: %s", sent)
+
+
+@api.post("/cron/day2-reminder")
+async def cron_day2_reminder(request: Request, background: BackgroundTasks):
+    # Cron endpoints must ack 2xx immediately; enqueue/background the actual work.
+    auth = request.headers.get("Authorization", "")
+    token = auth[7:] if auth.startswith("Bearer ") else ""
+    if not token or not hmac.compare_digest(token, os.environ["WEBHOOK_CRON_SECRET"]):
+        raise HTTPException(401, "Unauthorized")
+    try:
+        envelope = await request.json()
+    except Exception:
+        raise HTTPException(400, "Invalid body")
+    run_id = request.headers.get("X-Webhook-Id") or (envelope or {}).get("run_id")
+    if not run_id:
+        raise HTTPException(400, "Missing run_id")
+    res = await db.cron_runs.update_one({"_id": run_id}, {"$setOnInsert": {"at": now_iso()}}, upsert=True)
+    if res.upserted_id is not None:
+        background.add_task(run_day2_reminders)
+    return {"accepted": True}
 
 
 app.include_router(api)

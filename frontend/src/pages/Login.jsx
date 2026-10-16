@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, Navigate, useNavigate } from "react-router-dom";
+import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { formatApiError } from "@/lib/api";
 import { AuthShell } from "@/components/AuthShell";
@@ -9,10 +9,11 @@ import { Label } from "@/components/ui/label";
 export default function Login() {
   const { user, login } = useAuth();
   const navigate = useNavigate();
+  const from = useLocation().state?.from || "/dashboard";
   const [form, setForm] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
-  if (user) return <Navigate to="/dashboard" replace />;
+  if (user && !busy) return <Navigate to={from} replace />;
 
   const submit = async (e) => {
     e.preventDefault();
@@ -20,7 +21,7 @@ export default function Login() {
     setError("");
     try {
       await login(form.email, form.password);
-      navigate("/dashboard");
+      navigate(from);
     } catch (err) {
       setError(formatApiError(err));
     } finally {

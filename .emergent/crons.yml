@@ -1,0 +1,8 @@
+crons:
+  - name: day2-reminder
+    description: "Hourly check that emails readers who haven't finished Assessment 1 within 48 hours of signup"
+    cron: "0 * * * *"
+    # Cron endpoints must ack 2xx immediately; enqueue/background the actual work.
+    endpoint: "{{BASE_URL}}/api/cron/day2-reminder"
+    method: POST
+    enabled: true
