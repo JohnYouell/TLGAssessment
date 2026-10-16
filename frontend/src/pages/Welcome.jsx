@@ -15,7 +15,7 @@ export default function Welcome({ firstVisit = false }) {
   const name = user?.name?.split(" ")[0];
   return (
     <div data-testid="welcome-page">
-      <section className="relative overflow-hidden bg-black bg-cover bg-left lg:bg-right" style={{ backgroundImage: "url(/hero-bg-v2.jpg)" }} data-testid="welcome-hero">
+      <section className="relative overflow-hidden bg-black bg-cover bg-center bg-[image:var(--hero-sm)] md:bg-left md:bg-[image:var(--hero-lg)] lg:bg-right" style={{ "--hero-sm": "url(/hero-sm.jpg)", "--hero-lg": "url(/hero-bg-v2.jpg)" }} data-testid="welcome-hero">
         <div aria-hidden="true" className="absolute inset-0 bg-black/30 lg:hidden" />
         <div className="relative z-10 mx-auto flex max-w-7xl items-center justify-between gap-12 px-5 py-24 sm:px-8 lg:py-36">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} className="max-w-2xl">
