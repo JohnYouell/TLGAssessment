@@ -92,7 +92,8 @@ def branded_html(heading, paragraphs, cta_text, cta_url, logo=None, bg_url=None)
     bg_css = f"background-image:url('{bg_url}');background-size:cover;background-position:center;" if bg_url else ""
     divider = '<tr><td style="padding:0 40px"><div style="height:2px;background:#D4AF37;line-height:2px;font-size:0">&nbsp;</div></td></tr>'
     body = "".join(f"<p {P_STYLE}>{t}</p>" for t in paragraphs)
-    return f"""<!DOCTYPE html><html><body style="margin:0;padding:0;background:#0a0a0a">
+    return f"""<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width,initial-scale=1">
+<style>@media only screen and (max-width:480px){{.cta{{font-size:14px !important;letter-spacing:1px !important;padding:16px 18px !important}}}}</style></head><body style="margin:0;padding:0;background:#0a0a0a">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0"{bg_attr} style="background-color:#0a0a0a;{bg_css}"><tr><td align="center" style="padding:32px 12px">
 <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:{'rgba(10,10,10,0.72)' if bg_url else '#0a0a0a'};border:1px solid #2a2a2a">
 <tr><td align="center" style="padding:40px 40px 28px"><img src="{logo}" alt="The Lord's Gym" width="140" style="display:block;width:140px;max-width:140px;height:auto;border:0"></td></tr>
@@ -102,7 +103,7 @@ def branded_html(heading, paragraphs, cta_text, cta_url, logo=None, bg_url=None)
 {body}
 </td></tr>
 <tr><td align="center" style="padding:16px 40px 40px">
-<a href="{cta_url}" style="display:inline-block;background:#D4AF37;color:#000000;font-family:Arial,Helvetica,sans-serif;font-size:16px;font-weight:900;letter-spacing:3px;text-decoration:none;padding:18px 44px;border-radius:2px">{cta_text}</a>
+<a href="{cta_url}" class="cta" style="display:inline-block;background:#D4AF37;color:#000000;font-family:Arial,Helvetica,sans-serif;font-size:16px;font-weight:900;letter-spacing:2px;text-decoration:none;padding:18px 32px;border-radius:2px">{cta_text}</a>
 </td></tr>
 {divider}
 <tr><td align="center" style="padding:24px 40px 36px;color:#c0c0c8;font-family:Georgia,serif;font-size:13px;letter-spacing:2px">DISCIPLESHIP TRAINING, ONE REP AT A TIME</td></tr>
