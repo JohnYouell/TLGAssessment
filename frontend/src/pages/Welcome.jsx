@@ -33,15 +33,6 @@ export default function Welcome({ firstVisit = false }) {
               {!user && <Link to="/login" className="text-link" data-testid="welcome-signin-link">I already have an account</Link>}
             </div>
           </motion.div>
-          <motion.img
-            src="/hero-emblem.png"
-            alt="The Lord's Gym emblem"
-            initial={{ opacity: 0, scale: 0.92 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.8, delay: 0.2 }}
-            className="hidden w-[300px] shrink-0 drop-shadow-[0_20px_45px_rgba(212,175,55,0.25)] lg:block xl:w-[380px]"
-            data-testid="welcome-hero-emblem"
-          />
         </div>
       </section>
       <section className="mx-auto grid max-w-7xl gap-px bg-line px-0 sm:grid-cols-3">
