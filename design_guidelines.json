@@ -1,0 +1,120 @@
+{
+  "theme": "dark",
+  "app_type": "faith_based_assessment_training",
+  "typography": {
+    "primary_headings": {
+      "font": "Oswald",
+      "weights": ["400", "600", "700"],
+      "usage": "Bold, punchy athletic headings for pages, cards, and results.",
+      "google_font_url": "https://fonts.googleapis.com/css2?family=Oswald:wght@400;600;700&display=swap"
+    },
+    "byline_and_accents": {
+      "font": "Cinzel",
+      "weights": ["400", "700"],
+      "usage": "Specifically for the Header Byline and elegant, faith-based accents.",
+      "google_font_url": "https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&display=swap"
+    },
+    "body": {
+      "font": "Manrope",
+      "weights": ["400", "500", "600"],
+      "usage": "Clean, highly legible body text for quiz questions, meaning text, and UI elements.",
+      "google_font_url": "https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600&display=swap"
+    }
+  },
+  "colors": {
+    "background": "#0A0A0A",
+    "surface": "#121212",
+    "surface_elevated": "#1A1A1A",
+    "primary_gold": "#D4AF37",
+    "primary_gold_hover": "#F2CE5A",
+    "text_primary": "#FFFFFF",
+    "text_secondary": "#A1A1AA",
+    "success_green": "#22C55E",
+    "border": "#27272A",
+    "status_not_started": "#52525B",
+    "status_in_progress": "#EAB308",
+    "status_completed": "#D4AF37"
+  },
+  "visual_enhancers": {
+    "shadows": "Minimal. Rely on 1px borders (#27272A) and subtle glows for active states.",
+    "borders": "Sharp corners or minimal 4px radius to maintain a structured, disciplined athletic aesthetic.",
+    "textures": "Use the dark texture background for headers and subtle noise overlays on dark surfaces.",
+    "gradients": "Avoid colorful gradients. Use dark fade-outs (black to transparent) over imagery."
+  },
+  "component_instructions": {
+    "header": {
+      "background": "Use the dark texture background image. background-size: cover, background-position: center.",
+      "logo": "Embed official book logo, max height 50px, aligned left.",
+      "byline": "Next to logo. Text: 'Discipleship Training, One Rep at a Time'. Font: Cinzel, bold, small-caps, colored white.",
+      "navigation": "Clean text links ONLY. No button background shapes. White text, transitions to gold (#D4AF37) on hover. Hamburger menu on mobile (white)."
+    },
+    "auth": {
+      "layout": "Centered or split-screen with an inspiring gym background on one side.",
+      "elements": "Include marketing opt-in checkbox. Primary CTA button in Gold (#D4AF37) with black text."
+    },
+    "dashboard": {
+      "layout": "Bento grid or structured list for the 7 assessments. 'Reps' metaphor for progress.",
+      "cards": "Dark surface (#121212) with 1px border. Clear status badges (Not Started, In Progress, Completed)."
+    },
+    "quiz": {
+      "likert_scale": "1-5 scale using custom radio buttons. Do NOT use default HTML radios. Create a horizontal flex layout (stack on mobile) of selectable boxes. Explicit labels: 'Rarely True' on the left (1), 'Consistently True under pressure' on the right (5)."
+    },
+    "results_individual": {
+      "layout": "Large, bold score display (Oswald font). Clear designation category (e.g., Novice, Elite). Meaning text formatted elegantly for readability."
+    },
+    "master_results": {
+      "locked_state": "If not all 7 are complete, show a blurred or dimmed overlay with a lock icon and message 'Complete all 7 reps to unlock Master Results'.",
+      "table": "5-column data table: Sections, Chapters, Day 1 Score, Today Score, Change. Rows for 5 book sections. Bottom TOTAL row 'Total out of 125'.",
+      "indicators": "Positive changes must use green text (#22C55E) and an upward arrow icon."
+    }
+  },
+  "layouts": {
+    "spacing": "Generous vertical spacing (py-12 to py-24 for sections). Compact, disciplined spacing within data tables (py-3 px-4).",
+    "grids": "Use 12-column grid system for complex layouts. Master results table should be scrollable on mobile."
+  },
+  "motion": {
+    "hover": "Navigation links and buttons should have a quick 150ms ease-in-out color transition.",
+    "page_load": "Fade in core content. Stagger the entrance of the 7 dashboard assessment cards."
+  },
+  "accessibility": {
+    "contrast": "Ensure all text against the textured header background meets contrast ratios (use a slight dark overlay if the texture is too bright).",
+    "focus": "Gold outline for focused inputs and buttons.",
+    "test_ids": "Include data-testid on all interactive elements (e.g., 'login-button', 'nav-dashboard', 'quiz-option-1')."
+  },
+  "image_urls": {
+    "header_texture": {
+      "url": "https://images.unsplash.com/photo-1770795945642-0b303e40261a?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1NzB8MHwxfHNlYXJjaHwzfHxibGFjayUyMHRleHR1cmUlMjBiYWNrZ3JvdW5kfGVufDB8fHx8MTc5MjE4MDMzM3ww&ixlib=rb-4.1.0&q=85",
+      "description": "Dark, textured background with subtle white speckles - for header background."
+    },
+    "logo_placeholder": {
+      "url": "https://images.unsplash.com/photo-1715783735932-2aaa7bcfab34?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzNDR8MHwxfHNlYXJjaHwyfHxnb2xkJTIwZW1ibGVtJTIwbG9nb3xlbnwwfHx8fDE3OTIxODAzMzN8MA&ixlib=rb-4.1.0&q=85",
+      "description": "Gold emblem on dark background to serve as the book logo placeholder."
+    },
+    "welcome_gateway_bg": {
+      "url": "https://images.unsplash.com/photo-1605296867304-46d5465a13f1?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1Mjh8MHwxfHNlYXJjaHwzfHxneW0lMjB0cmFpbmluZyUyMGRhcmt8ZW58MHx8fHwxNzkyMTgwMzMzfDA&ixlib=rb-4.1.0&q=85",
+      "description": "Shirtless man lifting barbell in dark gym - inspiring background for welcome page."
+    },
+    "quiz_bg_overlay": {
+      "url": "https://images.unsplash.com/photo-1517836357463-d25dfeac3438?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1Mjh8MHwxfHNlYXJjaHwyfHxneW0lMjB0cmFpbmluZyUyMGRhcmt8ZW58MHx8fHwxNzkyMTgwMzMzfDA&ixlib=rb-4.1.0&q=85",
+      "description": "Person about to lift the barbell - background for auth or quiz loading states."
+    }
+  },
+  "universal_guidelines_for_main_agent": [
+    "You tend to converge toward generic, 'on distribution' outputs. In frontend design, this creates what users call the 'AI slop' aesthetic. Avoid this: make creative, distinctive frontends that surprise and delight.",
+    "Do not use dark colors as gradients. Stick to solid dark backgrounds with subtle grain/texture.",
+    "Do not make generic centered layouts. Use asymmetrical or structured bento grids for the dashboard.",
+    "Use glass-morphism effects carefully; for this athletic app, prefer solid dark surfaces (#121212) with sharp 1px borders (#27272A) over heavily blurred glass.",
+    "NEVER use the 'transition: all' CSS property. Target specific properties (e.g., transition-colors, transition-transform).",
+    "Do not apply '.App { text-align: center; }'.",
+    "Use modern, sharp-edged or slightly rounded buttons (e.g., rounded-sm) to fit the athletic discipline theme, colored in Gold (#D4AF37) for primary actions.",
+    "Avoid AI assistant emojis. Use lucide-react icons (e.g., Dumbbell, Lock, CheckCircle, ArrowUp).",
+    "Add 'data-testid' to all buttons, links, form inputs, and key informational elements.",
+    "Use 'sonner' for toast notifications."
+  ],
+  "libraries_and_tools": [
+    "lucide-react (Icons)",
+    "sonner (Toasts)",
+    "recharts (Optional for results charts, though table is explicitly requested)",
+    "framer-motion (For staggering dashboard cards and route transitions)"
+  ]
+}

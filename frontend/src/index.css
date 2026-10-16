@@ -1,0 +1,101 @@
+@import url("https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Oswald:wght@400;600;700&family=Manrope:wght@400;500;600;700&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+    margin: 0;
+    font-family: "Manrope", sans-serif;
+    background: #0a0a0a;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+@layer base {
+    :root {
+        --background: 0 0% 4%;
+        --foreground: 0 0% 100%;
+        --card: 0 0% 7%;
+        --card-foreground: 0 0% 100%;
+        --popover: 0 0% 7%;
+        --popover-foreground: 0 0% 100%;
+        --primary: 46 65% 52%;
+        --primary-foreground: 0 0% 0%;
+        --secondary: 0 0% 10%;
+        --secondary-foreground: 0 0% 100%;
+        --muted: 0 0% 10%;
+        --muted-foreground: 240 5% 65%;
+        --accent: 46 65% 52%;
+        --accent-foreground: 0 0% 0%;
+        --destructive: 0 84.2% 60.2%;
+        --destructive-foreground: 0 0% 98%;
+        --border: 240 4% 16%;
+        --input: 240 4% 16%;
+        --ring: 46 65% 52%;
+        --radius: 0.25rem;
+    }
+}
+
+@layer base {
+    * {
+        @apply border-border;
+    }
+    body {
+        @apply bg-background text-foreground;
+    }
+    ::selection {
+        background: #d4af37;
+        color: #000;
+    }
+}
+
+@layer components {
+    .eyebrow {
+        @apply font-accent text-xs font-bold uppercase tracking-[0.25em] text-gold;
+    }
+    .btn-gold {
+        @apply inline-flex items-center gap-2 rounded-sm bg-gold px-7 py-3.5 font-heading text-sm font-semibold uppercase tracking-[0.18em] text-black transition-colors duration-150 hover:bg-gold-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-gold focus-visible:ring-offset-2 focus-visible:ring-offset-black;
+    }
+    .text-link {
+        @apply text-gold underline-offset-4 transition-colors duration-150 hover:text-gold-hover hover:underline;
+    }
+    .field-label {
+        @apply text-xs uppercase tracking-[0.18em] text-zinc-400;
+    }
+    .field {
+        @apply h-12 rounded-sm border-line bg-surface text-white focus-visible:ring-gold;
+    }
+}
+
+@layer base {
+    [data-debug-wrapper="true"] {
+        display: contents !important;
+    }
+
+    [data-debug-wrapper="true"] > * {
+        margin-left: inherit;
+        margin-right: inherit;
+        margin-top: inherit;
+        margin-bottom: inherit;
+        padding-left: inherit;
+        padding-right: inherit;
+        padding-top: inherit;
+        padding-bottom: inherit;
+        column-gap: inherit;
+        row-gap: inherit;
+        gap: inherit;
+        border-left-width: inherit;
+        border-right-width: inherit;
+        border-top-width: inherit;
+        border-bottom-width: inherit;
+        border-left-style: inherit;
+        border-right-style: inherit;
+        border-top-style: inherit;
+        border-bottom-style: inherit;
+        border-left-color: inherit;
+        border-right-color: inherit;
+        border-top-color: inherit;
+        border-bottom-color: inherit;
+    }
+}
