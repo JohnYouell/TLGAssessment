@@ -33,7 +33,7 @@ export const TrainSomeoneNext = () => {
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <button type="button" className="inline-flex items-center gap-2 border-b-2 border-gold pb-1 font-heading text-sm uppercase tracking-[0.18em] text-gold transition-colors duration-150 hover:text-gold-hover" data-testid="train-someone-next-button">
+        <button type="button" className="inline-flex items-center gap-2 rounded-sm border-2 border-gold px-7 py-3 font-heading text-sm font-semibold uppercase tracking-[0.18em] text-gold transition-colors duration-150 hover:bg-gold hover:text-black" data-testid="train-someone-next-button">
           <Users className="h-4 w-4" /> Train Someone Next
         </button>
       </DialogTrigger>
@@ -44,8 +44,8 @@ export const TrainSomeoneNext = () => {
           <DialogDescription className="text-zinc-400">Share this message with a friend to start their journey.</DialogDescription>
         </DialogHeader>
         <p className="rounded-sm border border-line bg-surface p-4 text-sm leading-relaxed text-zinc-200" data-testid="invite-message">{message}</p>
-        <div className="flex items-center gap-2 rounded-sm border border-line bg-surface-2 px-3 py-2">
-          <span className="flex-1 truncate text-xs text-gold" data-testid="invite-link">{link}</span>
+        <div className="flex min-w-0 items-center gap-2 rounded-sm border border-line bg-surface-2 px-3 py-2">
+          <span className="min-w-0 flex-1 truncate text-xs text-gold" data-testid="invite-link">{link}</span>
         </div>
         <div className="grid grid-cols-3 gap-3">
           <ShareAction icon={Copy} label="Copy Link" onClick={copy} testId="invite-copy-link" />

@@ -1,0 +1,32 @@
+{
+  "summary": "Frontend testing of the 'Train Someone Next' invite feature. Logged in as test_invite@example.com. All 6 requested checks pass after one mobile layout fix made by the testing agent. On desktop the button sits to the right of download-scorecard-button on the same row, and both buttons are visible at 390px. invite-message matches the required text exactly, ending with <origin>/register?ref=6ad2a2bc8e3ed898398d3aac. Copy Link puts the exact URL on the clipboard and shows the 'Invite link copied' toast. The SMS href starts with 'sms:?&body=' and the email href starts with 'mailto:?subject='; both bodies decode to the exact message. The modal closes with both X and Escape. One referral signup through the UI (TEST_ref_64059@example.com) went to /welcome, and db.users stored referred_by='6ad2a2bc8e3ed898398d3aac'. Bug found and fixed: on 390px mobile the modal content overflowed horizontally (scrollWidth 591 vs clientWidth 388), so the title was clipped and the Email share button sat off-screen at x=411. The cause was the truncated (nowrap) invite-link row: as a child of the DialogContent grid with min-width:auto it forced the column wider. Adding min-w-0 to that row and its span fixed it (scrollWidth now 388 and all 3 share buttons visible). Cleanup: deleted 2 test users (/^test/i) and their 7 progress docs.",
+  "backend_issues": {"critical": [], "minor": [
+    {"endpoint": "POST /api/auth/register", "issue": "referred_by is accepted as any string up to 64 characters and is not checked against an existing user id. Low risk, but bad or garbage referral data can be stored."}
+  ]},
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "TrainSomeoneNext invite modal (mobile 390px)", "issue": "FIXED by testing agent: the invite-link row with truncate/whitespace-nowrap overflowed the dialog grid, clipping the title and pushing the Email share button off-screen. Added min-w-0 to the link wrapper div and span.", "selector": "[data-testid='invite-link']", "priority": "HIGH (fixed)"}
+    ],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Master Results actions", "issues": ["'Train Someone Next' is styled as a small underlined text link (26px tall), while the download button is a solid gold 48px button. The spec asks for a 'highly visible' item, so consider an outlined gold button of the same height as the download button."]}
+    ]
+  },
+  "test_report_links": [],
+  "action_items": [
+    "Optional: make train-someone-next-button a more prominent outlined button so it meets the 'highly visible' requirement",
+    "Optional: validate referred_by on register (must be a valid ObjectId of an existing user)"
+  ],
+  "critical_code_review_comments": [
+    "TrainSomeoneNext reads user.id with no null guard. That is fine because the page is protected, but the component would crash if it were reused outside auth.",
+    "Register.jsx still has a debug console.log for marketing_opt_in"
+  ],
+  "updated_files": ["/app/frontend/src/components/TrainSomeoneNext.jsx"],
+  "success_rate": {"backend": "N/A (skipped)", "frontend": "100% after fix (6/6 flows)"},
+  "test_credentials": "test_invite@example.com / test1234 was seeded by the main agent and has now been DELETED during cleanup as instructed (all /^test/i users removed). Re-seed it if retesting is needed.",
+  "seed_data_creation": "One UI registration, TEST_ref_64059@example.com, which has since been deleted.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Invite feature verified end-to-end. Mobile overflow fix is in TrainSomeoneNext.jsx (min-w-0). The test_invite user was deleted, so re-seed it to retest.",
+  "rca of the issue": "Mobile overflow: DialogContent is display:grid. Grid items default to min-width:auto, so the nowrap/truncate link span set the min-content width (~590px) of the single 1fr column, and the whole modal grew wider than the viewport. Fix: min-w-0 on the flex row and the span lets the text truncate."
+}
