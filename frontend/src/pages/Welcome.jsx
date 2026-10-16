@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 
-const GOLD_BOX = { box: "bg-gold", num: "text-black", text: "text-black" };
+const GOLD_BOX = { box: "bg-gold", num: "text-white", text: "text-black" };
 const STEPS = [
   { k: "01", t: "Create your account", d: "Your progress is saved to your profile, rep by rep.", s: GOLD_BOX },
   { k: "02", t: "Complete 7 reps", d: "Seven sequential assessments that follow the book.", s: { box: "bg-white", num: "text-gold", text: "text-black" } },
@@ -15,7 +15,8 @@ export default function Welcome({ firstVisit = false }) {
   const name = user?.name?.split(" ")[0];
   return (
     <div data-testid="welcome-page">
-      <section className="relative overflow-hidden bg-black">
+      <section className="relative overflow-hidden bg-black bg-cover bg-right" style={{ backgroundImage: "url(/hero-bg.jpg)" }} data-testid="welcome-hero">
+        <div aria-hidden="true" className="absolute inset-0 bg-black/65 lg:hidden" />
         <div className="relative z-10 mx-auto flex max-w-7xl items-center justify-between gap-12 px-5 py-24 sm:px-8 lg:py-36">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} className="max-w-2xl">
             <p className="eyebrow" data-testid="welcome-eyebrow">{firstVisit && name ? `Welcome to the gym, ${name}` : "The Lord's Gym · Assessment Series"}</p>
