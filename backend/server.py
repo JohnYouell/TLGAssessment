@@ -61,6 +61,7 @@ class User(BaseDocument):
     marketing_opt_in: bool = False
     created_at: str = ""
     last_activity_at: str = ""
+    referred_by: Optional[str] = None
 
     def public(self):
         return {"id": self.id, "name": self.name, "email": self.email, "marketing_opt_in": self.marketing_opt_in}
@@ -85,6 +86,7 @@ class RegisterIn(BaseModel):
     email: EmailStr
     password: str = Field(min_length=6, max_length=128)
     marketing_opt_in: bool = False
+    referred_by: Optional[str] = Field(default=None, max_length=64)
 
 
 class LoginIn(BaseModel):
@@ -156,7 +158,7 @@ async def register(body: RegisterIn, response: Response, background: BackgroundT
     if await db.users.find_one({"email": email}):
         raise HTTPException(400, "An account with this email already exists")
     user = User(name=body.name.strip(), email=email, password_hash=hash_password(body.password),
-                marketing_opt_in=body.marketing_opt_in, created_at=now_iso(), last_activity_at=now_iso())
+                marketing_opt_in=body.marketing_opt_in, created_at=now_iso(), last_activity_at=now_iso(), referred_by=body.referred_by)
     res = await db.users.insert_one(user.to_mongo())
     user.id = str(res.inserted_id)
     logger.info("Registered user %s marketing_opt_in=%s", email, user.marketing_opt_in)

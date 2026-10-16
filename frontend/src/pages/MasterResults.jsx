@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { api } from "@/lib/api";
 import { Loader } from "@/components/Loader";
 import { useAuth } from "@/context/AuthContext";
+import { TrainSomeoneNext } from "@/components/TrainSomeoneNext";
 
 const Change = ({ v, testId }) => {
   if (v > 0) return <span data-testid={testId} className="inline-flex items-center gap-1 font-semibold text-green-500"><ArrowUp className="h-4 w-4" />+{v}</span>;
@@ -46,7 +47,7 @@ const DownloadButton = () => {
     }
   };
   return (
-    <button type="button" onClick={download} disabled={busy} className="btn-gold mt-10" data-testid="download-scorecard-button">
+    <button type="button" onClick={download} disabled={busy} className="btn-gold" data-testid="download-scorecard-button">
       <Download className="h-4 w-4" /> {busy ? "Preparing..." : "Download Your Training Scorecard"}
     </button>
   );
@@ -71,7 +72,10 @@ export default function MasterResults() {
       {locked ? <Locked /> : !data ? <Loader /> : (
         <>
           <MasterTable data={data} />
-          <DownloadButton />
+          <div className="mt-10 flex flex-wrap items-center gap-x-8 gap-y-5">
+            <DownloadButton />
+            <TrainSomeoneNext />
+          </div>
         </>
       )}
     </div>

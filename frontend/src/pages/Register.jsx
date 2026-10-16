@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, Navigate, useNavigate } from "react-router-dom";
+import { Link, Navigate, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { formatApiError } from "@/lib/api";
 import { AuthShell } from "@/components/AuthShell";
@@ -17,7 +17,8 @@ const Field = ({ id, label, type = "text", value, onChange, testId, minLength })
 export default function Register() {
   const { user, register } = useAuth();
   const navigate = useNavigate();
-  const [form, setForm] = useState({ name: "", email: "", password: "", marketing_opt_in: false });
+  const [params] = useSearchParams();
+  const [form, setForm] = useState({ name: "", email: "", password: "", marketing_opt_in: false, referred_by: params.get("ref") || null });
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   if (user && !busy) return <Navigate to="/dashboard" replace />;
