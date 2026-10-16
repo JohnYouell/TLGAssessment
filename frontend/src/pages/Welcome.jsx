@@ -16,7 +16,6 @@ export default function Welcome({ firstVisit = false }) {
   return (
     <div data-testid="welcome-page">
       <section className="relative overflow-hidden bg-black">
-        <div aria-hidden="true" className="welcome-texture absolute inset-0" style={{ backgroundImage: "url(/header-bg.jpg)" }} data-testid="welcome-texture-layer" />
         <div className="relative z-10 mx-auto flex max-w-7xl items-center justify-between gap-12 px-5 py-24 sm:px-8 lg:py-36">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} className="max-w-2xl">
             <p className="eyebrow" data-testid="welcome-eyebrow">{firstVisit && name ? `Welcome to the gym, ${name}` : "The Lord's Gym · Assessment Series"}</p>

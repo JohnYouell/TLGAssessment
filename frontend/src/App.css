@@ -1,13 +1,5 @@
 .site-header {
-    background-size: cover;
-    background-position: center;
-}
-
-.site-header::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.55);
+    background-color: #000000;
     border-bottom: 1px solid rgba(212, 175, 55, 0.35);
 }
 
@@ -36,8 +28,3 @@
     color: #d4af37;
 }
 
-.welcome-texture {
-    background-size: cover;
-    background-position: center;
-    opacity: 0.05;
-}
