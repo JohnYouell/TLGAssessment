@@ -35,3 +35,9 @@
 .nav-link:hover {
     color: #d4af37;
 }
+
+.welcome-texture {
+    background-size: cover;
+    background-position: center;
+    opacity: 0.3;
+}
