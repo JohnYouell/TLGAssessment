@@ -34,7 +34,7 @@ export const Header = () => {
     <header data-testid="site-header" className="site-header relative z-40 text-white" style={{ backgroundImage: "url(/header-bg.jpg)" }}>
       <div className="relative mx-auto flex max-w-7xl items-center justify-between gap-4 px-5 py-3 sm:px-8">
         <Link to="/" className="flex min-w-0 items-center gap-3" data-testid="header-logo-link">
-          <img src="/logo.png" alt="The Lord's Gym logo" className="h-auto max-h-[50px] w-auto shrink-0" data-testid="header-logo" />
+          <img src="/logo-white.png" alt="The Lord's Gym logo" className="h-auto max-h-[50px] w-auto shrink-0" data-testid="header-logo" />
           <span className="byline text-xs leading-tight sm:text-base" data-testid="header-byline">
             Discipleship Training, One Rep at a Time
           </span>

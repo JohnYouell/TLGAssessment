@@ -12,7 +12,7 @@ from typing import Annotated, Dict, Optional
 import bcrypt
 import jwt
 from bson import ObjectId
-from fastapi import FastAPI, APIRouter, HTTPException, Request, Response, Depends
+from fastapi import FastAPI, APIRouter, HTTPException, Request, Response, Depends, BackgroundTasks
 from motor.motor_asyncio import AsyncIOMotorClient
 from pydantic import BaseModel, BeforeValidator, ConfigDict, EmailStr, Field
 from starlette.middleware.cors import CORSMiddleware
@@ -21,6 +21,7 @@ from assessments_config import (
     ASSESSMENTS, SECTIONS, SCALE_MAX, BASELINE_ASSESSMENT_ID, FINAL_ASSESSMENT_ID, TOTAL_125_TIERS,
 )
 from scorecard import build_scorecard_pdf
+from brevo import create_contact, send_scorecard_email
 
 client = AsyncIOMotorClient(os.environ["MONGO_URL"])
 db = client[os.environ["DB_NAME"]]
@@ -144,7 +145,7 @@ async def get_current_user(request: Request) -> User:
 
 # ---------- Auth routes ----------
 @api.post("/auth/register")
-async def register(body: RegisterIn, response: Response):
+async def register(body: RegisterIn, response: Response, background: BackgroundTasks):
     email = body.email.lower()
     if await db.users.find_one({"email": email}):
         raise HTTPException(400, "An account with this email already exists")
@@ -153,6 +154,8 @@ async def register(body: RegisterIn, response: Response):
     res = await db.users.insert_one(user.to_mongo())
     user.id = str(res.inserted_id)
     logger.info("Registered user %s marketing_opt_in=%s", email, user.marketing_opt_in)
+    if user.marketing_opt_in:
+        background.add_task(create_contact, email, user.name)
     set_auth_cookies(response, user.id)
     return user.public()
 
@@ -336,11 +339,12 @@ async def master_results(user: User = Depends(get_current_user)):
 
 
 @api.get("/master-results/scorecard")
-async def scorecard(user: User = Depends(get_current_user)):
+async def scorecard(background: BackgroundTasks, user: User = Depends(get_current_user)):
     data = await compute_master(user)
     d1, today = tier(TOTAL_125_TIERS, data["total"]["day1"]), tier(TOTAL_125_TIERS, data["total"]["today"])
     data.update(day1_designation=d1["label"], today_designation=today["label"], today_meaning=today["meaning"])
     pdf = build_scorecard_pdf(user.name, datetime.now(timezone.utc).strftime("%B %d, %Y"), data)
+    background.add_task(send_scorecard_email, user.email, user.name, data, pdf)
     return Response(pdf, media_type="application/pdf",
                     headers={"Content-Disposition": 'attachment; filename="Lords-Gym-Training-Scorecard.pdf"'})
 

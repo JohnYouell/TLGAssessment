@@ -4,6 +4,7 @@ import { ArrowUp, ArrowDown, Minus, Lock, ArrowLeft, Download } from "lucide-rea
 import { toast } from "sonner";
 import { api } from "@/lib/api";
 import { Loader } from "@/components/Loader";
+import { useAuth } from "@/context/AuthContext";
 
 const Change = ({ v, testId }) => {
   if (v > 0) return <span data-testid={testId} className="inline-flex items-center gap-1 font-semibold text-green-500"><ArrowUp className="h-4 w-4" />+{v}</span>;
@@ -26,6 +27,7 @@ const Locked = () => (
 
 const DownloadButton = () => {
   const [busy, setBusy] = useState(false);
+  const { user } = useAuth();
   const download = async () => {
     setBusy(true);
     try {
@@ -36,6 +38,7 @@ const DownloadButton = () => {
       a.download = "Lords-Gym-Training-Scorecard.pdf";
       a.click();
       URL.revokeObjectURL(url);
+      toast.success(`A copy of your scorecard is on its way to ${user.email}`);
     } catch (e) {
       toast.error("Could not generate your scorecard. Please try again.");
     } finally {
