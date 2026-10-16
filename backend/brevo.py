@@ -165,6 +165,29 @@ async def send_nudge_email(email, name):
     return await _send(email, name, "Consistency is where the growth happens", nudge_html())
 
 
+def completion_html(final_score, max_score):
+    metric = (
+        '<span style="display:block;margin:6px 0 0;padding:18px;border:2px solid #D4AF37;text-align:center">'
+        '<span style="display:block;color:#D4AF37;font-size:12px;letter-spacing:3px;font-weight:700">YOUR FINAL TOTAL GROWTH SCORE</span>'
+        f'<span style="display:block;color:#ffffff;font-family:Georgia,serif;font-size:44px;font-weight:700;line-height:1.2">{final_score}'
+        f'<span style="color:#D4AF37;font-size:24px"> / {max_score}</span></span></span>'
+    )
+    return branded_html(
+        'Course Completed.<br><span style="color:#D4AF37">You Finished the Work!</span>',
+        [
+            f"Congratulations! You have completed all 7 assessment stages of {BOOK}. You didn’t just stay in the bleachers—you stepped onto the floor, faced the weight, and committed to the daily work of growing in Christ.",
+            f"Your Final Spiritual Training Metrics are locked in:{metric}",
+            "Spiritual strength is a lifelong pursuit, and your training doesn’t end here. Keep clean form, stay on the floor, and look for who God is calling you to help train next.",
+        ],
+        "DOWNLOAD YOUR FINAL SCORECARD", _site("/master-results"),
+        logo=_site("/email-logo-gold.png"), bg_url=_site("/email-texture.jpg"),
+    )
+
+
+async def send_completion_email(email, name, final_score, max_score):
+    return await _send(email, name, "Course Completed. You Finished the Work!", completion_html(final_score, max_score))
+
+
 async def send_scorecard_email(email, name, data, pdf_bytes):
     payload = {
         "sender": {"name": os.environ["BREVO_SENDER_NAME"], "email": os.environ["BREVO_SENDER_EMAIL"]},

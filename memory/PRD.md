@@ -27,6 +27,7 @@ Readers of the book working through the discipleship assessments; small-group le
 - Header logo switched to the white TLG logo (public/logo-white.png)
 - Day 2 reminder: the hourly platform cron (.emergent/crons.yml, POST /api/cron/day2-reminder, Bearer WEBHOOK_CRON_SECRET, idempotent per run_id) emails readers whose account is 48+ hours old and who haven't completed A1. It is sent once per user (users.day2_reminder_sent_at), and the FINISH YOUR FIRST REP button links to /assessment/1. Login now returns users to the page they were trying to open.
 - Unfinished journey nudge: the hourly cron (POST /api/cron/journey-nudge) emails readers who have completed 1–6 assessments and been inactive for 7+ days (users.last_activity_at is updated on login, answer saves and submits). It is sent once per inactive stretch (nudge_sent_at is cleared on new activity). The email uses the texture background, the gold logo and a RETURN TO THE TRAINING FLOOR button linking to /dashboard; the optimized images are served from SITE_URL (/email-texture.jpg, /email-logo-gold.png).
+- Completion celebration: submitting A7 with all 7 completed immediately sends (in the background) a "Course Completed. You Finished the Work!" email with the A7 total out of 125 and a DOWNLOAD YOUR FINAL SCORECARD button linking to /master-results.
 
 ## Assumptions
 - A1's overall total uses the same /125 total tiers as A7

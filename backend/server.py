@@ -21,7 +21,7 @@ from assessments_config import (
     ASSESSMENTS, SECTIONS, SCALE_MAX, BASELINE_ASSESSMENT_ID, FINAL_ASSESSMENT_ID, TOTAL_125_TIERS,
 )
 from scorecard import build_scorecard_pdf
-from brevo import create_contact, send_scorecard_email, send_welcome_email, send_reminder_email, send_nudge_email
+from brevo import create_contact, send_scorecard_email, send_welcome_email, send_reminder_email, send_nudge_email, send_completion_email
 import hmac
 
 client = AsyncIOMotorClient(os.environ["MONGO_URL"])
@@ -308,7 +308,7 @@ async def save_progress(aid: int, body: AnswersIn, user: User = Depends(get_curr
 
 
 @api.post("/assessments/{aid}/submit")
-async def submit(aid: int, body: AnswersIn, user: User = Depends(get_current_user)):
+async def submit(aid: int, body: AnswersIn, background: BackgroundTasks, user: User = Depends(get_current_user)):
     a = get_assessment(aid)
     prog = await user_progress(user.id)
     if not is_unlocked(aid, prog):
@@ -331,6 +331,9 @@ async def submit(aid: int, body: AnswersIn, user: User = Depends(get_current_use
                  section_scores=section_scores, completed_at=now_iso(), updated_at=now_iso())
     await touch(user.id)
     await db.progress.update_one({"user_id": user.id, "assessment_id": aid}, {"$set": p.to_mongo()}, upsert=True)
+    completed = {k for k, v in prog.items() if v.status == "completed"} | {aid}
+    if aid == FINAL_ASSESSMENT_ID and len(completed) == len(ASSESSMENTS):
+        background.add_task(send_completion_email, user.email, user.name, score, max_score)
     return result_payload(a, p)
 
 
