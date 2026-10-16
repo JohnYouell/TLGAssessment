@@ -158,8 +158,7 @@ async def register(body: RegisterIn, response: Response):
 @api.post("/auth/login")
 async def login(body: LoginIn, request: Request, response: Response):
     email = body.email.lower()
-    fwd = request.headers.get("x-forwarded-for", "").split(",")[0].strip()
-    ident = f"{fwd or (request.client.host if request.client else 'x')}:{email}"
+    ident = email
     attempt = await db.login_attempts.find_one({"identifier": ident})
     if attempt and attempt.get("count", 0) >= 5:
         locked_at = datetime.fromisoformat(attempt["last"])

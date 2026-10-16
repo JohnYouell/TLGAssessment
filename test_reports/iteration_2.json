@@ -1,0 +1,38 @@
+{
+  "summary": "Iteration 2 tested the real content, scoring tiers, section scores, master results and the 3 regression fixes. Backend: the new test_lords_gym_content.py has 16 tests, all pass, covering titles, question counts (25/15x5/25), section titles and chapters, A7 reusing the A1 question text, tier boundaries for review scores (33/34/48/49/63/64), section scores (11/12/16/17/21) and the /125 total (55/56/80/81/105/106), A7 all 4s = 100 Pressing Forward with each section 20 Pressing Forward, and master rows with negative and zero changes. Full suite: 27/28 pass. The 1 failure is the flaky brute-force lockout test. Frontend: A1 quiz has 5 section headers and 25 questions; in-progress answers persist after reload with localStorage cleared; submit is disabled until all are answered. The result page shows 75/125 'On the Floor' and the correct section scores and designations for answers 1..5 by section. A2 has 15 questions and no headers (45/75 On the Floor). A7 shows 125/125 and the master button. Master Results shows 5 real section titles and chapters, green up arrows, and the TOTAL row 'Total out of 125' (50 -> 125, +75). Mobile Sign Out is left-aligned (x=20, same as Dashboard) and the byline is not truncated. Sign out and the protected-route redirect work. Still failing: the post-register /welcome redirect (2/2 attempts). Flaky: brute-force lockout.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "POST /api/auth/login", "issue": "Lockout is flaky and can be bypassed. The identifier is the first X-Forwarded-For IP plus the email. (a) Our container's requests leave from 2 public IPs (35.193.209.116 and 34.170.12.145), so attempts for one email were split 3+3 and the 6th login returned 401 instead of 429. This happened in about 2 of 8 runs. (b) X-Forwarded-For is set by the client. Sending a different X-Forwarded-For on each request gave 7 failed logins with 7 separate identifier docs (count 1 each), so there was never a lockout. Fix: also keep a per-email counter, or key the lockout on email only."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "Register.jsx", "issue": "Regression fix 1 is NOT working. After registering, the URL ends on /dashboard and the 'Welcome to the gym, <name>' page never shows (2/2 attempts, both with a 3s wait). Cause: react-router-dom 7.18.4 wraps navigate() in React.startTransition. The `finally { setBusy(false) }` update is urgent, so it renders before the transition while the location is still /register. With user set and busy=false, the guard `if (user && !busy) return <Navigate to='/dashboard'/>` fires. Fix: call setBusy(false) only in the catch branch, not in finally. Alternatively use a justRegistered ref, or remove the Navigate guard and redirect only on mount.", "selector": "[data-testid=welcome-eyebrow]", "priority": "HIGH"}
+    ],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Mobile Master Results", "issues": ["Carried over from iteration 1: the table scrolls horizontally (min-w 560px), so the Change column is hidden at first on 390px. Not retested in detail."]}
+    ]
+  },
+  "test_report_links": ["/app/backend/tests/test_lords_gym_content.py", "/app/backend/tests/test_lords_gym_api.py", "/app/test_reports/pytest/pytest_results.xml"],
+  "action_items": [
+    "HIGH: Fix the Register.jsx welcome redirect. Move setBusy(false) out of finally and into catch, so busy stays true until the page unmounts. Then verify that the URL stays on /welcome and shows 'Welcome to the gym, <first name>'.",
+    "MEDIUM: Make the login lockout robust. Add a per-email failed-attempt counter (not tied to IP) so that rotating IPs or spoofing X-Forwarded-For cannot bypass it."
+  ],
+  "critical_code_review_comments": [
+    "server.py tier(): `[t for t in tiers if score >= t['min']][-1]` raises IndexError (500) if a score is below the lowest min. For example, result_payload defaults a missing section score to 0. No legacy progress docs exist now (checked), but use a safe fallback such as tiers[0].",
+    "Login.jsx has the same `if (user) Navigate` plus finally pattern. It is harmless because it navigates to /dashboard anyway.",
+    "MasterResults.jsx still shows the locked overlay for any error, not only 403.",
+    "Checked and fine: bcrypt hashes, httpOnly/Secure/SameSite=None cookies, and CORS with an explicit origin and credentials."
+  ],
+  "updated_files": ["/app/backend/tests/test_lords_gym_content.py (new)", "/app/backend/tests/test_lords_gym_api.py (updated test_progress_and_submit to the new question ids/tiers; removed the outdated test_bands and test_master_results, now covered by the content tests)"],
+  "success_rate": {"backend": "96% (27/28; lockout test flaky ~25%)", "frontend": "~90% (all flows pass except the register -> /welcome redirect)"},
+  "test_credentials": "test_smoke@example.com / test1234 (all 7 completed; master 50 -> 125). TEST_ users are registered on the fly with password test1234.",
+  "seed_data_creation": "None kept. Deleted 64 TEST_ users, 98 progress docs and 17 login_attempts. test_smoke was kept.",
+  "flaky_tests": ["test_brute_force_lockout / test_brute_force_lockout_429: ~25% failure rate, caused by 2 egress IPs"],
+  "retest_needed": true,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Run: cd /app/backend && REACT_APP_BACKEND_URL=<url> python -m pytest tests/ (pytest.ini uses -n 2). Retest the register -> /welcome flow in the UI (data-testid=welcome-eyebrow, wait 3s, URL must stay on /welcome) and the lockout (run it several times). Clean up TEST_ users afterwards with mongosh: users email /^test_(user|ui|xff)_/ plus their progress and login_attempts docs.",
+  "rca of the issue": "Welcome redirect: React Router v7 runs navigate('/welcome') as a transition. The urgent setBusy(false) in finally commits first while still on /register, so `user && !busy` triggers <Navigate to='/dashboard'>. Reproduce: register in the UI and the final URL is /dashboard. Lockout: login_attempts contained 'ip1:email' with count 3 and 'ip2:email' with count 3 for the same user, and rotating X-Forwarded-For created a new doc on every request."
+}

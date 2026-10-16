@@ -97,43 +97,18 @@ class TestAssessments:
 
     def test_progress_and_submit(self):
         s, _, _ = new_session()
-        r = s.put(f"{API}/assessments/1/progress", json={"answers": {"a1q1": 2, "bogus": 3, "a1q2": 9}})
+        r = s.put(f"{API}/assessments/1/progress", json={"answers": {"a1s1q1": 2, "bogus": 3, "a1s1q2": 9}})
         assert r.status_code == 200 and r.json()["answered_count"] == 1
         a1 = s.get(f"{API}/assessments").json()["assessments"][0]
         assert a1["status"] == "in_progress" and a1["answered_count"] == 1
-        assert s.get(f"{API}/assessments/1").json()["answers"] == {"a1q1": 2}
-        assert s.post(f"{API}/assessments/1/submit", json={"answers": {"a1q1": 2}}).status_code == 400
+        assert s.get(f"{API}/assessments/1").json()["answers"] == {"a1s1q1": 2}
+        assert s.post(f"{API}/assessments/1/submit", json={"answers": {"a1s1q1": 2}}).status_code == 400
         assert s.get(f"{API}/assessments/1/result").status_code == 404
-        r = s.post(f"{API}/assessments/1/submit", json={"answers": answers(1, 5)})
-        assert r.status_code == 200
-        d = r.json()
-        assert d["score"] == 15 and d["max_score"] == 15 and d["designation"] == "Battle-Ready" and d["meaning"]
-        assert s.get(f"{API}/assessments/1/result").json()["score"] == 15
+        full = {f"a1s{a}q{b}": 5 for a in range(1, 6) for b in range(1, 6)}
+        r = s.post(f"{API}/assessments/1/submit", json={"answers": full})
+        assert r.status_code == 200 and r.json()["score"] == 125 and r.json()["designation"] == "Training Others"
         lst = s.get(f"{API}/assessments").json()["assessments"]
         assert lst[0]["status"] == "completed" and lst[1]["unlocked"] is True and lst[2]["unlocked"] is False
-        assert s.post(f"{API}/assessments/1/submit", json={"answers": answers(1, 5)}).status_code == 400
-        assert s.put(f"{API}/assessments/1/progress", json={"answers": answers(1, 5)}).status_code == 400
-
-    def test_bands(self):
-        s, _, _ = new_session()
-        assert s.post(f"{API}/assessments/1/submit", json={"answers": answers(1, 1)}).json()["designation"] == "Warm-Up"
-        assert s.post(f"{API}/assessments/2/submit", json={"answers": answers(2, [2, 2, 2])}).json()["designation"] == "Building Strength"
-        assert s.post(f"{API}/assessments/3/submit", json={"answers": answers(3, [4, 3, 3])}).json()["designation"] == "Conditioned"
-
-    def test_master_results(self):
-        s, _, _ = new_session()
-        assert s.get(f"{API}/master-results").status_code == 403
-        for aid in range(1, 8):
-            v = 1 if aid == 1 else 5
-            if aid == 7:
-                v = [5, 4, 3]
-            r = s.post(f"{API}/assessments/{aid}/submit", json={"answers": answers(aid, v)})
-            assert r.status_code == 200, (aid, r.text)
-        assert s.get(f"{API}/assessments").json()["master_unlocked"] is True
-        d = s.get(f"{API}/master-results").json()
-        rows = d["rows"]
-        assert len(rows) == 5
-        assert [r["day1"] for r in rows] == [1, 1, 1, 0, 0]
-        assert [r["today"] for r in rows] == [5, 4, 3, 0, 0]
-        assert [r["change"] for r in rows] == [4, 3, 2, 0, 0]
-        assert d["total"] == {"day1": 3, "today": 12, "change": 9, "max": 15}
+        assert s.post(f"{API}/assessments/1/submit", json={"answers": full}).status_code == 400
+        assert s.put(f"{API}/assessments/1/progress", json={"answers": full}).status_code == 400
+    # Scoring tiers & master results moved to test_lords_gym_content.py (iteration 2 real content)

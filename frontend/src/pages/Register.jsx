@@ -32,7 +32,6 @@ export default function Register() {
       navigate("/welcome");
     } catch (err) {
       setError(formatApiError(err));
-    } finally {
       setBusy(false);
     }
   };

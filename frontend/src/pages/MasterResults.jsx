@@ -46,28 +46,28 @@ export default function MasterResults() {
 
 const MasterTable = ({ data }) => (
   <div className="mt-12 overflow-x-auto border border-line" data-testid="master-table-wrapper">
-    <table className="w-full min-w-[560px] text-left" data-testid="master-table">
+    <table className="w-full text-left" data-testid="master-table">
       <thead className="bg-surface-2">
-        <tr className="font-heading text-xs uppercase tracking-[0.18em] text-gold">
-          {["Sections", "Chapters", "Day 1 Score", "Today Score", "Change"].map((h) => <th key={h} className="px-3 py-4 sm:px-4">{h}</th>)}
+        <tr className="font-heading text-[10px] uppercase tracking-wider text-gold sm:text-xs sm:tracking-[0.18em]">
+          {["Sections", "Chapters", "Day 1 Score", "Today Score", "Change"].map((h) => <th key={h} className="px-2 py-4 sm:px-4">{h}</th>)}
         </tr>
       </thead>
       <tbody>
         {data.rows.map((r, i) => (
-          <tr key={r.section} className="border-t border-line bg-surface text-sm text-zinc-200" data-testid={`master-row-${i + 1}`}>
-            <td className="px-4 py-3 font-semibold text-white">{r.section}</td>
-            <td className="px-4 py-3 text-zinc-400">{r.chapters}</td>
-            <td className="px-4 py-3" data-testid={`master-row-${i + 1}-day1`}>{r.day1}</td>
-            <td className="px-4 py-3" data-testid={`master-row-${i + 1}-today`}>{r.today}</td>
-            <td className="px-4 py-3"><Change v={r.change} testId={`master-row-${i + 1}-change`} /></td>
+          <tr key={r.section} className="border-t border-line bg-surface text-xs text-zinc-200 sm:text-sm" data-testid={`master-row-${i + 1}`}>
+            <td className="px-2 py-3 sm:px-4 font-semibold text-white">{r.section}</td>
+            <td className="px-2 py-3 sm:px-4 text-zinc-400">{r.chapters}</td>
+            <td className="px-2 py-3 sm:px-4" data-testid={`master-row-${i + 1}-day1`}>{r.day1}</td>
+            <td className="px-2 py-3 sm:px-4" data-testid={`master-row-${i + 1}-today`}>{r.today}</td>
+            <td className="px-2 py-3 sm:px-4"><Change v={r.change} testId={`master-row-${i + 1}-change`} /></td>
           </tr>
         ))}
-        <tr className="border-t-2 border-gold bg-gold/10 font-heading text-base uppercase text-white" data-testid="master-total-row">
-          <td className="px-4 py-4 font-bold">Total</td>
-          <td className="px-4 py-4 text-zinc-300">Total out of {data.total.max}</td>
-          <td className="px-4 py-4" data-testid="master-total-day1">{data.total.day1}</td>
-          <td className="px-4 py-4" data-testid="master-total-today">{data.total.today}</td>
-          <td className="px-4 py-4"><Change v={data.total.change} testId="master-total-change" /></td>
+        <tr className="border-t-2 border-gold bg-gold/10 font-heading text-sm uppercase text-white sm:text-base" data-testid="master-total-row">
+          <td className="px-2 py-4 sm:px-4 font-bold">Total</td>
+          <td className="px-2 py-4 sm:px-4 text-zinc-300">Total out of {data.total.max}</td>
+          <td className="px-2 py-4 sm:px-4" data-testid="master-total-day1">{data.total.day1}</td>
+          <td className="px-2 py-4 sm:px-4" data-testid="master-total-today">{data.total.today}</td>
+          <td className="px-2 py-4 sm:px-4"><Change v={data.total.change} testId="master-total-change" /></td>
         </tr>
       </tbody>
     </table>
