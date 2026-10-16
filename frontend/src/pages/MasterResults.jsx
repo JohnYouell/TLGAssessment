@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowUp, ArrowDown, Minus, Lock, ArrowLeft } from "lucide-react";
+import { ArrowUp, ArrowDown, Minus, Lock, ArrowLeft, Download } from "lucide-react";
+import { toast } from "sonner";
 import { api } from "@/lib/api";
 import { Loader } from "@/components/Loader";
 
@@ -23,6 +24,31 @@ const Locked = () => (
   </div>
 );
 
+const DownloadButton = () => {
+  const [busy, setBusy] = useState(false);
+  const download = async () => {
+    setBusy(true);
+    try {
+      const { data } = await api.get("/master-results/scorecard", { responseType: "blob" });
+      const url = URL.createObjectURL(data);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "Lords-Gym-Training-Scorecard.pdf";
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      toast.error("Could not generate your scorecard. Please try again.");
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <button type="button" onClick={download} disabled={busy} className="btn-gold mt-10" data-testid="download-scorecard-button">
+      <Download className="h-4 w-4" /> {busy ? "Preparing..." : "Download Your Training Scorecard"}
+    </button>
+  );
+};
+
 export default function MasterResults() {
   const [data, setData] = useState(null);
   const [locked, setLocked] = useState(false);
@@ -39,7 +65,12 @@ export default function MasterResults() {
       <p className="eyebrow mt-8">Final Scorecard</p>
       <h1 className="mt-3 font-heading text-4xl font-bold uppercase text-white sm:text-5xl lg:text-6xl">Master Results</h1>
       <p className="mt-4 max-w-2xl text-zinc-400">Your Day 1 baseline compared to Today, across all five sections of the book.</p>
-      {locked ? <Locked /> : !data ? <Loader /> : <MasterTable data={data} />}
+      {locked ? <Locked /> : !data ? <Loader /> : (
+        <>
+          <MasterTable data={data} />
+          <DownloadButton />
+        </>
+      )}
     </div>
   );
 }

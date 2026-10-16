@@ -28,6 +28,7 @@ export default function Register() {
     setBusy(true);
     setError("");
     try {
+      console.log("[signup] marketing_opt_in:", form.marketing_opt_in);
       await register(form);
       navigate("/welcome");
     } catch (err) {
@@ -44,7 +45,7 @@ export default function Register() {
         <Field id="password" label="Password (min 6 characters)" type="password" minLength={6} value={form.password} onChange={set("password")} testId="register-password-input" />
         <label htmlFor="optin" className="flex cursor-pointer items-start gap-3 text-sm text-zinc-300">
           <Checkbox id="optin" checked={form.marketing_opt_in} onCheckedChange={(v) => set("marketing_opt_in")(v === true)} className="mt-0.5 border-gold data-[state=checked]:bg-gold data-[state=checked]:text-black" data-testid="register-optin-checkbox" />
-          <span>Yes, send me encouragement, training tips, and updates from The Lord's Gym by email.</span>
+          <span>Opt-in to the Discipleship Training E-Marketing List</span>
         </label>
         {error && <p className="text-sm text-red-400" data-testid="register-error">{error}</p>}
         <button type="submit" disabled={busy} className="btn-gold w-full justify-center" data-testid="register-submit-button">

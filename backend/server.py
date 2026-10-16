@@ -18,8 +18,9 @@ from pydantic import BaseModel, BeforeValidator, ConfigDict, EmailStr, Field
 from starlette.middleware.cors import CORSMiddleware
 
 from assessments_config import (
-    ASSESSMENTS, SECTIONS, SCALE_MAX, BASELINE_ASSESSMENT_ID, FINAL_ASSESSMENT_ID,
+    ASSESSMENTS, SECTIONS, SCALE_MAX, BASELINE_ASSESSMENT_ID, FINAL_ASSESSMENT_ID, TOTAL_125_TIERS,
 )
+from scorecard import build_scorecard_pdf
 
 client = AsyncIOMotorClient(os.environ["MONGO_URL"])
 db = client[os.environ["DB_NAME"]]
@@ -151,6 +152,7 @@ async def register(body: RegisterIn, response: Response):
                 marketing_opt_in=body.marketing_opt_in, created_at=now_iso())
     res = await db.users.insert_one(user.to_mongo())
     user.id = str(res.inserted_id)
+    logger.info("Registered user %s marketing_opt_in=%s", email, user.marketing_opt_in)
     set_auth_cookies(response, user.id)
     return user.public()
 
@@ -330,6 +332,20 @@ async def get_result(aid: int, user: User = Depends(get_current_user)):
 
 @api.get("/master-results")
 async def master_results(user: User = Depends(get_current_user)):
+    return await compute_master(user)
+
+
+@api.get("/master-results/scorecard")
+async def scorecard(user: User = Depends(get_current_user)):
+    data = await compute_master(user)
+    d1, today = tier(TOTAL_125_TIERS, data["total"]["day1"]), tier(TOTAL_125_TIERS, data["total"]["today"])
+    data.update(day1_designation=d1["label"], today_designation=today["label"], today_meaning=today["meaning"])
+    pdf = build_scorecard_pdf(user.name, datetime.now(timezone.utc).strftime("%B %d, %Y"), data)
+    return Response(pdf, media_type="application/pdf",
+                    headers={"Content-Disposition": 'attachment; filename="Lords-Gym-Training-Scorecard.pdf"'})
+
+
+async def compute_master(user: User):
     prog = await user_progress(user.id)
     if not all(a["id"] in prog and prog[a["id"]].status == "completed" for a in ASSESSMENTS):
         raise HTTPException(403, "Complete all 7 assessments to unlock Master Results")
