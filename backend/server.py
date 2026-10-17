@@ -114,6 +114,29 @@ DEFAULT_VERSES = [
 ]
 
 
+PAGE_SLUGS = ("about", "contact")
+DEFAULT_PAGES = {
+    "about": {
+        "eyebrow": "About",
+        "title": "The Lord's Gym",
+        "body": "The Lord's Gym: Discipleship Training, One Rep at a Time treats spiritual growth like training: steady, daily work that builds strength over time. This site is the companion assessment series for the book.\n\nThe series has 7 assessments. You start with the Initial Spiritual Assessment as your Day 1 baseline. Then you work through five section reviews that follow the book's chapters, and you finish with the Spiritual Progress Assessment. Your Master Results compare Day 1 to Today across all five sections, so you can see how far you've come.\n\n[Placeholder: author bio, ministry background and where to buy the book]",
+    },
+    "contact": {
+        "eyebrow": "Contact",
+        "title": "Get in Touch",
+        "body": "Questions about the assessments, your account or the book? Send us an email and we'll get back to you.\n\n[Placeholder: mailing address, phone number and office hours]",
+    },
+}
+
+
+class PageIn(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True)
+    eyebrow: str = Field(default="", max_length=40)
+    title: str = Field(min_length=1, max_length=80)
+    body: str = Field(min_length=1, max_length=8000)
+    photo_url: str = Field(default="", max_length=500, pattern=r"^(https://\S+)?$")
+
+
 class LoginIn(BaseModel):
     email: EmailStr
     password: str
@@ -244,6 +267,28 @@ async def put_verses(body: VersesIn, admin: User = Depends(require_admin)):
     await db.settings.update_one({"_id": "verses"}, {"$set": {"verses": verses, "updated_by": admin.email, "updated_at": now_iso()}}, upsert=True)
     logger.info("Verses updated by %s (%s verses)", admin.email, len(verses))
     return {"verses": verses}
+
+
+def check_slug(slug):
+    if slug not in PAGE_SLUGS:
+        raise HTTPException(404, "Page not found")
+
+
+@api.get("/pages/{slug}")
+async def get_page(slug: str):
+    check_slug(slug)
+    doc = await db.settings.find_one({"_id": f"page:{slug}"})
+    src = doc or DEFAULT_PAGES[slug]
+    return {k: src.get(k, "") for k in ("eyebrow", "title", "body", "photo_url")}
+
+
+@api.put("/admin/pages/{slug}")
+async def put_page(slug: str, body: PageIn, admin: User = Depends(require_admin)):
+    check_slug(slug)
+    data = body.model_dump()
+    await db.settings.update_one({"_id": f"page:{slug}"}, {"$set": {**data, "updated_by": admin.email, "updated_at": now_iso()}}, upsert=True)
+    logger.info("Page %s updated by %s", slug, admin.email)
+    return data
 
 
 @api.get("/auth/me")

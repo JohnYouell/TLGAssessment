@@ -61,9 +61,13 @@ export default function Dashboard() {
       {user.is_admin && (
         <div className="mt-12 border-t border-line pt-8" data-testid="admin-tools">
           <p className="eyebrow">Admin Tools</p>
-          <Link to="/admin/verses" className="text-link mt-3 inline-flex items-center gap-2 font-heading text-sm uppercase tracking-widest" data-testid="admin-verses-link">
-            Edit Scripture Banner <ArrowRight className="h-4 w-4" />
-          </Link>
+          <div className="mt-3 flex flex-wrap gap-x-10 gap-y-3">
+            {[["/admin/verses", "Edit Scripture Banner", "admin-verses-link"], ["/admin/pages/about", "Edit About Page", "admin-about-link"], ["/admin/pages/contact", "Edit Contact Page", "admin-contact-link"]].map(([to, label, tid]) => (
+              <Link key={to} to={to} className="text-link inline-flex items-center gap-2 font-heading text-sm uppercase tracking-widest" data-testid={tid}>
+                {label} <ArrowRight className="h-4 w-4" />
+              </Link>
+            ))}
+          </div>
         </div>
       )}
     </div>

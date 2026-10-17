@@ -13,6 +13,7 @@ import Quiz from "@/pages/Quiz";
 import Result from "@/pages/Result";
 import MasterResults from "@/pages/MasterResults";
 import AdminVerses from "@/pages/AdminVerses";
+import AdminPage from "@/pages/AdminPage";
 import About from "@/pages/About";
 import Contact from "@/pages/Contact";
 import { Footer } from "@/components/Footer";
@@ -46,6 +47,7 @@ function App() {
               <Route path="/master-results" element={guard(<MasterResults />)} />
               <Route path="/about" element={<About />} />
               <Route path="/contact" element={<Contact />} />
+              <Route path="/admin/pages/:slug" element={guard(<AdminPage />)} />
               <Route path="/admin/verses" element={guard(<AdminVerses />)} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
