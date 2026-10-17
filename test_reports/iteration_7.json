@@ -1,0 +1,29 @@
+{
+  "summary": "Frontend-only retest of the scripture banner blink fix. The described fix is NOT in the code. /app/frontend/src/components/ScriptureBanner.jsx still uses framer-motion AnimatePresence mode='wait' with a single keyed motion.p (no stacked grid [grid-area:1/1], no CSS opacity crossfade). AdminVerses.jsx placeholders are unchanged ('Verse text', 'Reference (e.g. 1 Timothy 4:7)', 'NIV') and say nothing about book quotes. Measurements: every 250ms for 30s, through 4 rotations, at 1920px and 390px. Banner height stayed constant (102px desktop, 142px mobile) thanks to min-height. Banner top and step-01 y positions also stayed constant, so there was no layout shift. However, only 1 verse element ever exists, and per-frame sampling over 15s showed the banner's highest verse opacity falling to 0 (33 frames below 0.2) at each change. The old verse fades out fully before the new one fades in, so the banner goes blank for a moment. This is the blink the user reported. Passed: borders (header bottom 5px gold, banner top 5px gold, banner bottom 1px rgba(212,175,55,0.4)); the footer copyright on the welcome and dashboard pages; the admin quote entry (saved 'TEST quote from the book' / 'The Lord's Gym, Ch. 3' with blank translation, got the toast, the welcome banner showed the reference with no translation label).",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "ScriptureBanner", "issue": "Crossfade fix not implemented. The file still uses AnimatePresence mode='wait', so the banner goes fully blank (opacity 0) for part of each 7s rotation, which is the reported blink. Only one scripture-verse element is ever in the DOM.", "selector": "[data-testid='scripture-verse']", "priority": "HIGH"}
+    ],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Admin /admin/verses", "issues": ["Placeholders/labels were not updated to mention book quotes: the reference placeholder is still 'Reference (e.g. 1 Timothy 4:7)', the translation field is still 'NIV', and the page text says 'verses'. New rows also default translation to 'NIV'."]}
+    ]
+  },
+  "test_report_links": [],
+  "action_items": [
+    "Actually apply the ScriptureBanner rewrite: render all verses in one grid cell (each with [grid-area:1/1]), toggle opacity-100/opacity-0 with transition-opacity duration-700, and remove AnimatePresence. The file on disk is unchanged from the previous commit; check that the edit was saved.",
+    "Update the AdminVerses placeholders for book quotes, e.g. text 'Verse or book quote', reference 'Reference or source (e.g. 1 Timothy 4:7 or The Lord's Gym, Ch. 3)', translation 'Translation (optional, blank for quotes)'. Consider a default translation of '' or keep NIV, and explain it."
+  ],
+  "critical_code_review_comments": [
+    "ScriptureBanner.jsx: AnimatePresence mode='wait' with a 0.5s exit plus a 0.5s enter leaves about 1s per rotation with no text showing. That gap is the root cause of the blink.",
+    "AdminVerses.jsx: add() defaults translation to 'NIV', so the admin has to clear it by hand for quotes."
+  ],
+  "updated_files": ["/app/test_reports/iteration_7.json"],
+  "success_rate": {"backend": "N/A (skipped)", "frontend": "60% (3 of 5 checks passed: borders, footer, quote entry; failed: blink-free crossfade, quote placeholders)"},
+  "seed_data_creation": "Seeded the admin with /app/tests/seed_users.py seed. Ran cleanup afterwards: users removed, login_attempts cleared, settings {_id:'verses'} deleted. /api/verses now returns the defaults.",
+  "retest_needed": true,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Measure the blink with requestAnimationFrame: the highest opacity across [data-testid='scripture-verse'] must never drop near 0, and with the fix there should be N verse elements. Height/position sampling already passes because of min-height. Use 'python3 /app/tests/seed_users.py seed|cleanup' from /app/backend.",
+  "rca of the issue": "Root cause: the banner uses framer-motion AnimatePresence mode='wait', which unmounts the old verse (exit fade to 0) before mounting the new one (enter from 0). This leaves a blank moment on every rotation. Reproduction: open /, sample opacity per frame for 15s, and the highest opacity reaches 0 at each change. Mitigation: render all verses stacked in one grid cell and crossfade with CSS opacity transitions so one verse is always partly visible."
+}

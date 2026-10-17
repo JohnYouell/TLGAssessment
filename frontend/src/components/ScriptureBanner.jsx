@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
 import { api } from "@/lib/api";
 
 export const ScriptureBanner = () => {
@@ -18,28 +17,22 @@ export const ScriptureBanner = () => {
     return () => clearInterval(id);
   }, [verses.length]);
 
-  const v = verses[i];
   return (
     <section className="border-b border-t-[4pt] border-b-gold/40 border-t-gold bg-black px-5 py-6 sm:px-8" data-testid="scripture-banner" aria-live="polite">
-      <div className="mx-auto flex min-h-[88px] max-w-4xl items-center justify-center text-center sm:min-h-[48px]">
-        <AnimatePresence mode="wait">
-          {v && (
-            <motion.p
-              key={`${i}-${v.ref}`}
-              initial={{ opacity: 0, y: 6 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -6 }}
-              transition={{ duration: 0.5 }}
-              className="font-accent text-sm text-white sm:text-base"
-              data-testid="scripture-verse"
-            >
-              &ldquo;{v.text}&rdquo;
-              <span className="ml-3 whitespace-nowrap font-heading text-xs uppercase tracking-[0.2em] text-gold" data-testid="scripture-reference">
-                {v.ref} {v.translation && <span className="text-zinc-500">{v.translation}</span>}
-              </span>
-            </motion.p>
-          )}
-        </AnimatePresence>
+      <div className="mx-auto grid min-h-[48px] max-w-4xl items-center text-center">
+        {verses.map((v, idx) => (
+          <p
+            key={idx}
+            aria-hidden={idx !== i}
+            className={`font-accent text-sm text-white transition-opacity duration-700 ease-in-out [grid-area:1/1] sm:text-base ${idx === i ? "opacity-100" : "pointer-events-none opacity-0"}`}
+            data-testid={idx === i ? "scripture-verse" : undefined}
+          >
+            &ldquo;{v.text}&rdquo;
+            <span className="ml-3 whitespace-nowrap font-heading text-xs uppercase tracking-[0.2em] text-gold" data-testid={idx === i ? "scripture-reference" : undefined}>
+              {v.ref} {v.translation && <span className="text-zinc-500">{v.translation}</span>}
+            </span>
+          </p>
+        ))}
       </div>
     </section>
   );
