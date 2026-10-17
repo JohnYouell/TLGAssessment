@@ -20,7 +20,7 @@ export const ScriptureBanner = () => {
 
   const v = verses[i];
   return (
-    <section className="border-y-[4pt] border-gold bg-black px-5 py-6 sm:px-8" data-testid="scripture-banner" aria-live="polite">
+    <section className="border-b border-t-[4pt] border-b-gold/40 border-t-gold bg-black px-5 py-6 sm:px-8" data-testid="scripture-banner" aria-live="polite">
       <div className="mx-auto flex min-h-[88px] max-w-4xl items-center justify-center text-center sm:min-h-[48px]">
         <AnimatePresence mode="wait">
           {v && (

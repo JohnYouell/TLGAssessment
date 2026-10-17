@@ -29,6 +29,7 @@ Readers of the book working through the discipleship assessments; small-group le
 - Unfinished journey nudge: the hourly cron (POST /api/cron/journey-nudge) emails readers who have completed 1–6 assessments and been inactive for 7+ days (users.last_activity_at is updated on login, answer saves and submits). It is sent once per inactive stretch (nudge_sent_at is cleared on new activity). The email uses the texture background, the gold logo and a RETURN TO THE TRAINING FLOOR button linking to /dashboard; the optimized images are served from SITE_URL (/email-texture.jpg, /email-logo-gold.png).
 - Completion celebration: submitting A7 with all 7 completed immediately sends (in the background) a "Course Completed. You Finished the Work!" email with the A7 total out of 125 and a DOWNLOAD YOUR FINAL SCORECARD button linking to /master-results.
 - Train Someone Next: an outlined gold button next to the scorecard download on Master Results opens an invite pop-up with the exact invite text, a unique link (/register?ref=<user id>, stored as users.referred_by on signup), and Copy Link / Text-SMS / Email shortcuts.
+- Welcome page: a desktop hero image and a separate phone hero image (cropped and faded), a rotating scripture banner (verses from GET /api/verses, editable by admins at /admin/verses; admin = ADMIN_EMAILS env allow-list), and a site-wide copyright footer. The header bottom bar and the banner's top bar are 4pt gold; the banner's bottom line is 1px gold at 40%.
 
 ## Assumptions
 - A1's overall total uses the same /125 total tiers as A7
