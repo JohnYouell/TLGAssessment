@@ -274,6 +274,34 @@ async def put_verses(body: VersesIn, admin: User = Depends(require_admin)):
     return {"verses": verses}
 
 
+class SharingIn(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True)
+    book_url: str = Field(default="", max_length=500, pattern=r"^(https?://\S+)?$")
+    share_subject: str = Field(min_length=1, max_length=120)
+    share_message: str = Field(min_length=1, max_length=2000)
+
+
+DEFAULT_SHARING = {
+    "book_url": "",
+    "share_subject": "Join me at The Lord's Gym",
+    "share_message": "I've been working through The Lord's Gym: Discipleship Training, One Rep at a Time, and it's been helping me grow in my walk with Christ, one rep at a time. I'd love for you to grab a copy of the book and join the conversation with me.",
+}
+
+
+@api.get("/sharing")
+async def get_sharing():
+    doc = await db.settings.find_one({"_id": "sharing"}) or {}
+    return {k: doc.get(k, v) for k, v in DEFAULT_SHARING.items()}
+
+
+@api.put("/admin/sharing")
+async def put_sharing(body: SharingIn, admin: User = Depends(require_admin)):
+    data = body.model_dump()
+    await db.settings.update_one({"_id": "sharing"}, {"$set": {**data, "updated_by": admin.email, "updated_at": now_iso()}}, upsert=True)
+    return data
+
+
+
 def check_slug(slug):
     if slug not in PAGE_SLUGS:
         raise HTTPException(404, "Page not found")

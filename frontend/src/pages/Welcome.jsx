@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { ScriptureBanner } from "@/components/ScriptureBanner";
+import { useSharing } from "@/lib/useSharing";
 
 const GOLD_BOX = { box: "bg-gold", num: "text-white", text: "text-black" };
 const WHITE_BOX = { box: "bg-white", num: "text-gold", text: "text-black" };
@@ -15,6 +16,7 @@ const STEPS = [
 
 export default function Welcome({ firstVisit = false }) {
   const { user } = useAuth();
+  const sharing = useSharing();
   const name = user?.name?.split(" ")[0];
   return (
     <div data-testid="welcome-page">
@@ -44,7 +46,11 @@ export default function Welcome({ firstVisit = false }) {
           <div key={s.k} className={`${s.s.box} px-8 py-12`} data-testid={`welcome-step-${s.k}`}>
             <span className={`font-heading text-7xl font-bold leading-none lg:text-8xl ${s.s.num}`}>{s.k}</span>
             <h3 className={`mt-4 font-heading text-xl uppercase tracking-wide ${s.s.text}`}>{s.t}</h3>
-            <p className={`mt-2 text-sm ${s.s.text}`}>{s.d}</p>
+            <p className={`mt-2 text-sm ${s.s.text}`}>
+              {s.k === "02" && sharing?.book_url ? (
+                <>Grab a copy of the book <a href={sharing.book_url} target="_blank" rel="noopener noreferrer" className="font-semibold text-gold underline underline-offset-4 hover:text-black" data-testid="welcome-book-link">here</a>.</>
+              ) : s.d}
+            </p>
           </div>
         ))}
       </section>

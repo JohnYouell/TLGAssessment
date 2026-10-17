@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, Megaphone, Users } from "lucide-react";
+import { ArrowRight, Megaphone, Users, Mail, MessageSquare, Copy } from "lucide-react";
+import { toast } from "sonner";
 import { api } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { usePaywall } from "@/context/PaywallContext";
 import { VideoEmbed } from "@/components/VideoEmbed";
 import { Loader } from "@/components/Loader";
+import { useSharing, shareBody } from "@/lib/useSharing";
 
 const useVideoData = () => {
   const [data, setData] = useState(null);
@@ -76,16 +78,24 @@ export function SectionVideo({ aid }) {
   );
 }
 
-const SHARE_TEXT = "I've been working through The Lord's Gym: Discipleship Training, One Rep at a Time, and it's been helping me grow in my walk with Christ, one rep at a time. I'd love for you to grab a copy of the book and join the conversation with me.";
+const OUTLINE = "inline-flex items-center gap-2 rounded-sm border-2 border-gold px-6 py-3 font-heading text-sm uppercase tracking-[0.18em] text-gold transition-colors duration-150 hover:bg-gold hover:text-black";
 
 export function SpreadTheWord() {
-  const link = `${window.location.origin}/register`;
-  const body = `${SHARE_TEXT}\n\nStart here: ${link}`;
+  const s = useSharing();
+  if (!s) return <Loader />;
+  const body = shareBody(s);
+  const copy = async () => {
+    await navigator.clipboard.writeText(body);
+    toast.success("Message copied");
+  };
   return (
     <Shell eyebrow="Spread the Word" title="Invite a Friend to Train" testId="spread-word-page">
-      <p className="mx-auto max-w-2xl whitespace-pre-line rounded-sm border border-line bg-surface p-6 text-left text-zinc-200" data-testid="spread-word-message">{body}</p>
-      <p className="text-xs text-zinc-500">[Draft message: final wording and book purchase link to be added]</p>
-      <a href={`mailto:?subject=${encodeURIComponent("Join me at The Lord's Gym")}&body=${encodeURIComponent(body)}`} className="btn-gold" data-testid="spread-word-email-button">Email a Friend</a>
+      <p className="mx-auto max-w-2xl whitespace-pre-line break-words rounded-sm border border-line bg-surface p-6 text-left text-zinc-200" data-testid="spread-word-message">{body}</p>
+      <div className="flex flex-wrap justify-center gap-4">
+        <a href={`mailto:?subject=${encodeURIComponent(s.share_subject)}&body=${encodeURIComponent(body)}`} className="btn-gold" data-testid="spread-word-email-button"><Mail className="h-4 w-4" /> Email a Friend</a>
+        <a href={`sms:?&body=${encodeURIComponent(body)}`} className={OUTLINE} data-testid="spread-word-sms-button"><MessageSquare className="h-4 w-4" /> Text / SMS</a>
+        <button type="button" onClick={copy} className={OUTLINE} data-testid="spread-word-copy-button"><Copy className="h-4 w-4" /> Copy Message</button>
+      </div>
     </Shell>
   );
 }

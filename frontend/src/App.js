@@ -13,6 +13,7 @@ import Quiz from "@/pages/Quiz";
 import Result from "@/pages/Result";
 import MasterResults from "@/pages/MasterResults";
 import AdminVerses from "@/pages/AdminVerses";
+import AdminSharing from "@/pages/AdminSharing";
 import AdminPage from "@/pages/AdminPage";
 import About from "@/pages/About";
 import Contact from "@/pages/Contact";
@@ -62,6 +63,7 @@ function App() {
               <Route path="/contact" element={<Contact />} />
               <Route path="/admin/pages/:slug" element={guard(<AdminPage />)} />
               <Route path="/admin/verses" element={guard(<AdminVerses />)} />
+              <Route path="/admin/sharing" element={guard(<AdminSharing />)} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </main>
