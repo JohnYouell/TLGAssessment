@@ -271,11 +271,14 @@ async def login(body: LoginIn, request: Request, response: Response):
 
 @api.post("/auth/google")
 async def google_login(body: GoogleIn, response: Response, background: BackgroundTasks):
-    async with httpx.AsyncClient(timeout=15.0) as c:
-        r = await c.get("https://demobackend.emergentagent.com/auth/v1/env/oauth/session-data", headers={"X-Session-ID": body.session_id})
-    if r.status_code != 200:
+    try:
+        async with httpx.AsyncClient(timeout=15.0) as c:
+            r = await c.get("https://demobackend.emergentagent.com/auth/v1/env/oauth/session-data", headers={"X-Session-ID": body.session_id})
+    except httpx.HTTPError:
+        raise HTTPException(502, "Google sign-in is temporarily unavailable. Please try again.")
+    info = r.json() if r.status_code == 200 else {}
+    if not info.get("email"):
         raise HTTPException(401, "Google sign-in failed. Please try again.")
-    info = r.json()
     email = info["email"].lower()
     user = User.from_mongo(await db.users.find_one({"email": email}))
     is_new = user is None

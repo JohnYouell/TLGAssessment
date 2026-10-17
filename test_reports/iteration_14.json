@@ -1,0 +1,33 @@
+{
+  "summary": "Tested the Emergent Google sign-in (up to the redirect, plus the error path), Forgot/Reset password, and regression of email/password auth and refresh. Backend: 18/18 pytest pass (tests/test_lords_gym_auth_google_reset.py). Frontend: all requested flows pass. login-google-button and register-google-button redirect to https://auth.emergentagent.com/?redirect=https%3A%2F%2Fdiscipleship-gym.preview.emergentagent.com%2Fdashboard. /register?ref=abc stores lg-ref=abc. /dashboard#session_id=invalid gets a 401 from /api/auth/google and shows auth-callback-error ('Google sign-in failed. Please try again.'); Back to Sign In goes to /login. Forgot flow: login-forgot-link -> /forgot-password -> forgot-sent, with the same response for unknown emails. Reset flow: reset-missing-token shows when there's no token. A mismatched confirm shows 'Passwords don't match.' A valid reset lands on /dashboard, after which the old password returns 401, the new password returns 200, and old cookies return 401 on /me and /refresh (token_version bumped). Reusing a token and using an expired token both show the 'invalid or has expired' error with a 'Request a new link' link. Rate limit holds: with 3 recent tokens, the 4th forgot request returns {ok:true} and no new token is created. A Google-only user (empty password_hash) gets 401, not 500, on password login. 5 failed logins trigger a 429 lockout. Refresh works. Email/password login via the UI works on mobile.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "POST /api/auth/reset-password", "issue": "Returns 500 (AttributeError: 'NoneType' has no attribute 'id' in set_auth_cookies) if the user doc was deleted after the token was issued. Reproduced during a parallel-run race. The app has no user-delete endpoint today, so risk is low. Fix: return 400 if the user lookup is None."},
+      {"endpoint": "POST /api/auth/google", "issue": "Two failure modes return a raw 500 instead of a clean 401/502: an httpx timeout or network error to demobackend.emergentagent.com is not caught, and a 200 response with no 'email' field raises a KeyError."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Login", "issues": ["login-forgot-link sits between the email and password inputs in the DOM, so pressing Tab from email lands on 'Forgot password?' before password. Minor accessibility issue."]}
+    ]
+  },
+  "test_report_links": ["/app/backend/tests/test_lords_gym_auth_google_reset.py", "/app/backend/tests/seed_auth_ui.py", "/app/test_reports/pytest/pytest_auth_iter14.xml"],
+  "action_items": [
+    "(Minor) reset-password: handle a missing user (return 400 instead of 500)",
+    "(Minor) /auth/google: wrap the httpx call in try/except for httpx.HTTPError and use info.get('email'), returning 401 when it's missing"
+  ],
+  "critical_code_review_comments": [
+    "Google login links to an existing password account by email. That matches the user's choice, and Emergent/Google emails are verified. Note that a password account squatted on someone else's email keeps its password access after the real owner signs in with Google. Acceptable for this app.",
+    "A stale sessionStorage lg-ref stays set if the Google flow is abandoned. Harmless, because it is only applied to new users.",
+    "server.py is 945 lines (over the 700 guideline); consider moving auth routes to their own module."
+  ],
+  "updated_files": ["/app/backend/tests/test_lords_gym_auth_google_reset.py", "/app/backend/tests/seed_auth_ui.py"],
+  "success_rate": {"backend": "100%", "frontend": "100%"},
+  "seed_data_creation": "Seeded test_auth_* @example.com users and reset tokens directly in Mongo; all were removed afterwards (0 TEST users, tokens or login_attempts remain). Real Brevo emails sent: 1 welcome email (register regression) and 1 reset email (forgot-creates-token test), both to @example.com addresses. john.youell@newlifeokc.org was not touched.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Run: pytest /app/backend/tests/test_lords_gym_auth_google_reset.py (xdist-safe; cleanup only deletes the emails each worker created). For UI reset tests: python /app/backend/tests/seed_auth_ui.py seed prints VALID/EXPIRED raw tokens for test_authui_reset@example.com (password oldpass1); run 'cleanup' afterwards. To check sessionStorage lg-ref, intercept auth.emergentagent.com with a 302 back to the app origin, then read sessionStorage. The real Google round trip was not tested."
+}

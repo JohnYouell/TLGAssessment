@@ -39,11 +39,9 @@ export default function Login() {
           <Input id="email" type="email" required value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="field" data-testid="login-email-input" />
         </div>
         <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <Label htmlFor="password" className="field-label">Password</Label>
-            <Link to="/forgot-password" className="text-link text-xs" data-testid="login-forgot-link">Forgot password?</Link>
-          </div>
+          <Label htmlFor="password" className="field-label">Password</Label>
           <Input id="password" type="password" required value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} className="field" data-testid="login-password-input" />
+          <Link to="/forgot-password" className="text-link inline-block text-xs" data-testid="login-forgot-link">Forgot password?</Link>
         </div>
         {error && <p className="text-sm text-red-400" data-testid="login-error">{error}</p>}
         <button type="submit" disabled={busy} className="btn-gold w-full justify-center" data-testid="login-submit-button">
