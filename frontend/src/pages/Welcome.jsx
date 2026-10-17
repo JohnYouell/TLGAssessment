@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import { ScriptureBanner } from "@/components/ScriptureBanner";
 
 const GOLD_BOX = { box: "bg-gold", num: "text-white", text: "text-black" };
 const STEPS = [
@@ -35,6 +36,7 @@ export default function Welcome({ firstVisit = false }) {
           </motion.div>
         </div>
       </section>
+      <ScriptureBanner />
       <section className="mx-auto grid max-w-7xl gap-px bg-line px-0 sm:grid-cols-3">
         {STEPS.map((s) => (
           <div key={s.k} className={`${s.s.box} px-8 py-12`} data-testid={`welcome-step-${s.k}`}>
