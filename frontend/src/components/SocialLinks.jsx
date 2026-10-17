@@ -1,9 +1,14 @@
 import { FaFacebookF, FaInstagram, FaLinkedinIn, FaTiktok, FaXTwitter } from "react-icons/fa6";
 
-const ParlerIcon = (props) => (
-  <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" {...props}>
-    <path d="M7 3h6.5a6.5 6.5 0 0 1 0 13H11v5H7V3Zm4 4v5h2.5a2.5 2.5 0 0 0 0-5H11Z" />
-  </svg>
+const ParlerIcon = ({ className }) => (
+  <span
+    aria-hidden="true"
+    className={`block bg-current ${className}`}
+    style={{
+      WebkitMask: "url(/parler-icon.png) center / contain no-repeat",
+      mask: "url(/parler-icon.png) center / contain no-repeat",
+    }}
+  />
 );
 
 const LINKS = [
