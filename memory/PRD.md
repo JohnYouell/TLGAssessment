@@ -30,7 +30,7 @@ Readers of the book working through the discipleship assessments; small-group le
 - Completion celebration: submitting A7 with all 7 completed immediately sends (in the background) a "Course Completed. You Finished the Work!" email with the A7 total out of 125 and a DOWNLOAD YOUR FINAL SCORECARD button linking to /master-results.
 - Train Someone Next: an outlined gold button next to the scorecard download on Master Results opens an invite pop-up with the exact invite text, a unique link (/register?ref=<user id>, stored as users.referred_by on signup), and Copy Link / Text-SMS / Email shortcuts.
 - Welcome page: a desktop hero image and a separate phone hero image (cropped and faded), a rotating scripture banner (verses from GET /api/verses, editable by admins at /admin/verses; admin = ADMIN_EMAILS env allow-list), and a site-wide copyright footer. The header bottom bar and the banner's top bar are 4pt gold; the banner's bottom line is 1px gold at 40%.
-- Footer nav (About /about, Contact /contact, Support = mailto:support@newlifeokc.org) above the copyright line. The About and Contact pages contain [placeholders] for the author bio, buying info, address, phone and hours.
+- Footer nav (About /about, Contact /contact, Support = mailto:support@newlifeokc.org) above the copyright line. The About and Contact pages are admin-editable at /admin/pages/about and /admin/pages/contact (eyebrow, title, body with blank-line paragraphs, plus a photo_url on About). With no photo link, About shows a dashed author-photo placeholder, and it falls back to the placeholder if the link breaks.
 
 ## Assumptions
 - A1's overall total uses the same /125 total tiers as A7

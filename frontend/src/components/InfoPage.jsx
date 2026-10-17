@@ -3,15 +3,20 @@ import { UserRound } from "lucide-react";
 import { api } from "@/lib/api";
 import { Loader } from "@/components/Loader";
 
-const AuthorPhoto = ({ url }) =>
-  url ? (
-    <img src={url} alt="Author" className="aspect-[4/5] w-full max-w-[280px] rounded-sm border-2 border-gold object-cover" data-testid="about-author-photo" />
-  ) : (
-    <div className="flex aspect-[4/5] w-full max-w-[280px] flex-col items-center justify-center gap-3 rounded-sm border-2 border-dashed border-gold/60 bg-surface text-center" data-testid="about-photo-placeholder">
-      <UserRound className="h-14 w-14 text-gold/70" />
-      <span className="px-4 text-xs uppercase tracking-widest text-zinc-500">[Placeholder: author photo]</span>
-    </div>
+const PhotoPlaceholder = () => (
+  <div className="flex aspect-[4/5] w-full max-w-[280px] flex-col items-center justify-center gap-3 rounded-sm border-2 border-dashed border-gold/60 bg-surface text-center" data-testid="about-photo-placeholder">
+    <UserRound className="h-14 w-14 text-gold/70" />
+    <span className="px-4 text-xs uppercase tracking-widest text-zinc-500">[Placeholder: author photo]</span>
+  </div>
+);
+
+const AuthorPhoto = ({ url }) => {
+  const [failed, setFailed] = useState(false);
+  if (!url || failed) return <PhotoPlaceholder />;
+  return (
+    <img src={url} alt="Author" onError={() => setFailed(true)} className="aspect-[4/5] w-full max-w-[280px] rounded-sm border-2 border-gold object-cover" data-testid="about-author-photo" />
   );
+};
 
 export const usePage = (slug) => {
   const [page, setPage] = useState(null);

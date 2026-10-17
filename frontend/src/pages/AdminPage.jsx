@@ -31,6 +31,10 @@ export default function AdminPage() {
       toast.error("Title and page text are required.");
       return;
     }
+    if (page.photo_url && !/^https:\/\/\S+$/.test(page.photo_url.trim())) {
+      toast.error("Photo link must start with https:// and contain no spaces.");
+      return;
+    }
     setBusy(true);
     try {
       const { data } = await api.put(`/admin/pages/${slug}`, page);
