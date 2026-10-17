@@ -12,8 +12,9 @@ export default function AdminInvites() {
   const [rows, setRows] = useState(null);
 
   useEffect(() => {
-    api.get("/admin/invites").then((r) => setRows(r.data.rows));
-  }, []);
+    if (!user.is_admin) return;
+    api.get("/admin/invites").then((r) => setRows(r.data.rows)).catch(() => setRows([]));
+  }, [user.is_admin]);
 
   if (!user.is_admin) return <Navigate to="/dashboard" replace />;
   if (!rows) return <Loader />;

@@ -1,0 +1,41 @@
+{
+  "summary": "Tested Profile Settings (name, email preferences, password) and Share Tracking end to end. Backend: 21/21 pytest pass (tests/test_lords_gym_account_invites.py). Covered: PUT /account persists and trims the name; empty and whitespace-only names give 422; email can't be changed. Password change: a wrong or empty current password gives 400, a short new password gives 422. A successful change keeps the current session, gives old cookies 401 on /me and /refresh, makes the old password fail and the new one work. A Google-only user can set a password with no current password. share-events: 401 when logged out, 422 for a bad source/channel; counts are right. /account/invites and /admin/invites: 403 for non-admins, correct spread/train/shares/joined values, sorted by joined, and a non-ObjectId referred_by doesn't crash. The cron opt-out filters were checked by running run_day2_reminders/run_journey_nudges in a separate temporary DB with the email senders stubbed. Opted-out users are skipped; legacy users with no field still get emails. Frontend: everything requested passes. Logged out, /account redirects to login and returns to /account after sign-in. nav-account works. The invites summary went from 'You've invited 0 friends, 1 joined' to '3 friends, 1 joined' after shares. Name and switch changes survive a reload. Toasts showed for an empty name, wrong password, mismatched passwords and success. The Google-only user saw 'Set a Password' with no current-password field, then 'Change Password' after setting one. Spread the Word Email/SMS/Copy each POST source=spread, and the message, mailto link and clipboard all contain /book?ref=<id>. The Train Someone Next modal (seeded user with all 7 done) Copy/SMS/Email POST source=train. /book?ref=X sets the join link to /register?ref=X and stores lg-ref. A plain /register then sent referred_by=X, and joined went up to 2. /admin/invites shows the table, the empty state and totals; a non-admin is redirected to /dashboard and the link is hidden. The mobile Account page has no horizontal overflow.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "PUT /api/account", "issue": "Brevo race when marketing is toggled quickly. The create_contact (on) and remove_from_list (off) background tasks can run out of order if two saves land within about a second. Seen in the pytest run: remove returned 400 'Contact ... does not exist', then create returned 201. The DB then says opted out while the contact stays on Brevo list 3. Sequential saves with a gap work (both 201). Fix: run the Brevo sync from the current DB state, e.g. a background task that re-reads marketing_opt_in before calling Brevo, or await the call inline."},
+      {"endpoint": "POST /api/share-events", "issue": "No rate limit or dedupe, so a reader can inflate their 'invited' count without limit (and the admin leaderboard with it). Consider a per-user, per-minute cap."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "AdminInvites", "issue": "A non-admin still fires GET /admin/invites before <Navigate> redirects. The 403 is an unhandled promise rejection ('Request failed with status code 403' in the console). Skip the fetch when !user.is_admin, or add .catch.", "selector": "[data-testid='admin-invites-page']", "priority": "LOW"},
+      {"component": "Account InvitesPanel", "issue": "api.get('/account/invites') has no .catch. On failure the panel stays hidden and the rejection is unhandled.", "selector": "[data-testid='account-invites']", "priority": "LOW"}
+    ],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "My Account - Email Preferences", "issues": ["The unchecked Switch track is dark grey on a near-black surface, so the off state is hard to see (low contrast). Give the off track a lighter fill or border, e.g. data-[state=unchecked]:bg-zinc-600."]},
+      {"screen": "My Account summary", "issues": ["The copy reads 'You've invited 1 friend' when 1 share happened. Wording is fine, but it counts share clicks, not people."]}
+    ]
+  },
+  "test_report_links": ["/app/backend/tests/test_lords_gym_account_invites.py", "/app/backend/tests/seed_account_ui.py", "/app/test_reports/pytest/pytest_account_iter15.xml"],
+  "action_items": [
+    "(Minor) PUT /account: make the Brevo add/remove sync order-safe (re-read the DB state in the task, or await it inline)",
+    "(Minor) AdminInvites: don't call /admin/invites for non-admins, or catch the 403; add .catch to InvitesPanel",
+    "(Minor) Raise the contrast of the unchecked Switch on the Account page",
+    "(Optional) Rate-limit /share-events",
+    "(Important, test infra) /app/backend/tests/seed_rep7_users.py lists john.youell@newlifeokc.org in USERS, so running seed or clean DELETES the real owner account and its progress. Remove that entry and seed a TEST_ admin via ADMIN_EMAILS instead. It was NOT run in this iteration."
+  ],
+  "critical_code_review_comments": [
+    "The cron queries correctly use reminders_opt_in {$ne: False}, so legacy users with no field still get reminders (verified).",
+    "referred_by accepts any string up to 64 characters. It is never checked against a real user, and admin_invites drops non-ObjectId or unknown ids (no crash). Acceptable.",
+    "localStorage lg-ref is never cleared after a successful register, so later signups on the same device are credited to the same referrer. Consider removing it after register or a Google sign-up.",
+    "server.py is now 1017 lines (guideline 700). Split it into account/admin/assessment route modules."
+  ],
+  "updated_files": ["/app/backend/tests/test_lords_gym_account_invites.py", "/app/backend/tests/seed_account_ui.py"],
+  "success_rate": {"backend": "100%", "frontend": "100%"},
+  "seed_data_creation": "Seeded test_inv_* and test_accui_* @example.com users (password, Google-only, a referred friend, a user with all 7 assessments done, and test_inv_admin@example.com) directly in Mongo. One UI register (test_accui_referred@example.com) sent a real Brevo welcome email. Marketing toggles made Brevo contact add/remove calls for @example.com only. All TEST users, share_events, progress and login_attempts were removed, and the temporary DB tmp_cron_test_db was dropped. ADMIN_EMAILS was temporarily set to include test_inv_admin@example.com, then restored to the original value and the backend restarted. The DB holds only john.youell@newlifeokc.org, which was untouched.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Run: pytest /app/backend/tests/test_lords_gym_account_invites.py. The admin test needs test_inv_admin@example.com added to ADMIN_EMAILS (restart the backend, then revert). The cron test runs server functions in a subprocess with DB_NAME=tmp_cron_test_db and stubbed senders, so it is safe to run. For UI: 'python seed_account_ui.py seed' prints MAIN_ID and GOOGLE_TOKEN (add it as the access_token cookie to act as the Google-only user); run 'cleanup' afterwards. Do NOT run seed_rep7_users.py (it deletes john.youell)."
+}

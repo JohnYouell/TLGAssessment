@@ -665,6 +665,14 @@ async def me(user: User = Depends(get_current_user)):
     return user.public()
 
 
+async def sync_marketing(user_id):
+    user = User.from_mongo(await db.users.find_one({"_id": ObjectId(user_id)}))
+    if user.marketing_opt_in:
+        await create_contact(user.email, user.name)
+    else:
+        await remove_from_list(user.email)
+
+
 @api.put("/account")
 async def update_account(body: AccountIn, background: BackgroundTasks, user: User = Depends(get_current_user)):
     name = body.name.strip()
@@ -672,10 +680,8 @@ async def update_account(body: AccountIn, background: BackgroundTasks, user: Use
         raise HTTPException(422, "Name can't be empty")
     await db.users.update_one({"_id": ObjectId(user.id)}, {"$set": {
         "name": name, "marketing_opt_in": body.marketing_opt_in, "reminders_opt_in": body.reminders_opt_in}})
-    if body.marketing_opt_in and not user.marketing_opt_in:
-        background.add_task(create_contact, user.email, name)
-    elif not body.marketing_opt_in and user.marketing_opt_in:
-        background.add_task(remove_from_list, user.email)
+    if body.marketing_opt_in != user.marketing_opt_in:
+        background.add_task(sync_marketing, user.id)
     user.name, user.marketing_opt_in, user.reminders_opt_in = name, body.marketing_opt_in, body.reminders_opt_in
     return user.public()
 
@@ -692,6 +698,9 @@ async def change_password(body: PasswordChangeIn, response: Response, user: User
 
 @api.post("/share-events")
 async def share_event(body: ShareEventIn, user: User = Depends(get_current_user)):
+    hour_ago = (datetime.now(timezone.utc) - timedelta(hours=1)).isoformat()
+    if await db.share_events.count_documents({"user_id": user.id, "created_at": {"$gte": hour_ago}}) >= 20:
+        return {"ok": True}
     await db.share_events.insert_one({"user_id": user.id, "source": body.source, "channel": body.channel, "created_at": now_iso()})
     return {"ok": True}
 

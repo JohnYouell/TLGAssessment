@@ -20,7 +20,7 @@ const Pref = ({ id, label, hint, checked, onChange }) => (
       <span className="block text-white">{label}</span>
       <span className="block text-sm text-zinc-400">{hint}</span>
     </span>
-    <Switch id={id} checked={checked} onCheckedChange={onChange} className="data-[state=checked]:bg-gold" data-testid={id} />
+    <Switch id={id} checked={checked} onCheckedChange={onChange} className="data-[state=checked]:bg-gold data-[state=unchecked]:bg-zinc-600" data-testid={id} />
   </label>
 );
 
@@ -115,7 +115,7 @@ const PasswordPanel = () => {
 const InvitesPanel = () => {
   const [d, setD] = useState(null);
   useEffect(() => {
-    api.get("/account/invites").then((r) => setD(r.data));
+    api.get("/account/invites").then((r) => setD(r.data)).catch(() => {});
   }, []);
   if (!d) return null;
   return (
