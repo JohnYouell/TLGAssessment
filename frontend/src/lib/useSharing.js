@@ -9,4 +9,4 @@ export const useSharing = () => {
   return data;
 };
 
-export const shareBody = (s) => (s.book_url ? `${s.share_message}\n\nGet the book: ${s.book_url}` : s.share_message);
+export const shareBody = (s) => `${s.share_message}\n\nGet the book: ${window.location.origin}/book`;

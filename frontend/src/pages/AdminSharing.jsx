@@ -48,7 +48,7 @@ export default function AdminSharing() {
       <p className="eyebrow mt-8">Admin</p>
       <h1 className="mt-3 font-heading text-4xl font-bold uppercase text-white sm:text-5xl">Book & Sharing</h1>
       <div className="mt-10 space-y-8">
-        <Field label="Book purchase link" hint="Used by the Read the Book box on the Welcome page and added to the end of the Spread the Word message. Leave blank to hide it.">
+        <Field label="Book purchase link" hint="Used by the Read the Book box on the Welcome page and the Get the Book button on /book. The Spread the Word message always ends with your /book page link, which shows the cover preview card. Leave blank until the book is available.">
           <Input value={s.book_url} onChange={set("book_url")} placeholder="https://..." maxLength={500} className="field" data-testid="sharing-book-url-input" />
         </Field>
         <Field label="Email subject">
