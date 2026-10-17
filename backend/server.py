@@ -464,7 +464,7 @@ async def put_page(slug: str, body: PageIn, admin: User = Depends(require_admin)
 stripe.api_key = os.environ["STRIPE_SECRET_KEY"]
 PACKAGE_PRICE = 25.00
 PACKAGE_LOOKUP_KEY = "tlg_full_access_40"
-DEFAULT_CODES = [("BetaTeam", 60), ("EarlyAdopters", 50), ("SeniorLeader", 75), ("TLG Staff", 100)]
+DEFAULT_CODES = [("BetaTeam", 100), ("EarlyAdopters", 50), ("SeniorLeader", 75), ("GymStaff", 80)]
 
 
 def norm_code(code):
