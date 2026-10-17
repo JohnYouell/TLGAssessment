@@ -43,7 +43,12 @@ export default function Welcome({ firstVisit = false }) {
       <ScriptureBanner />
       <section className="grid w-full gap-px bg-line px-0 sm:grid-cols-2 lg:grid-cols-4">
         {STEPS.map((s) => (
-          <div key={s.k} className={`${s.s.box} px-8 py-12`} data-testid={`welcome-step-${s.k}`}>
+          <div key={s.k} className={`${s.s.box} relative px-8 py-12`} data-testid={`welcome-step-${s.k}`}>
+            {s.k === "02" && (
+              <Link to="/book" className="absolute right-6 top-8 block w-24 transition-transform duration-300 hover:-translate-y-1 hover:rotate-[-2deg] lg:w-28" data-testid="welcome-book-image-link">
+                <img src="/book-3d.webp" alt="The Lord's Gym book" className="w-full" />
+              </Link>
+            )}
             <span className={`font-heading text-7xl font-bold leading-none lg:text-8xl ${s.s.num}`}>{s.k}</span>
             <h3 className={`mt-4 font-heading text-xl uppercase tracking-wide ${s.s.text}`}>{s.t}</h3>
             <p className={`mt-2 text-sm ${s.s.text}`}>

@@ -17,7 +17,7 @@ export default function BookPage() {
           The Lord's Gym<br /><span className="text-gold">Discipleship Training, One Rep at a Time</span>
         </h1>
         <div className="mt-6 h-[4pt] w-24 bg-gold" />
-        <p className="mt-6 max-w-xl text-base text-zinc-300 md:text-lg">Discipleship Training, One Rep at a Time. A book and 7-part assessment journey to help you grow in Christ.</p>
+        <p className="mt-6 max-w-xl text-base leading-relaxed text-zinc-300 md:text-lg" data-testid="book-blurb">Most believers aren't rebellious. They're untrained. In <em>The Lord's Gym</em>, Pastor John Youell, Jr. draws on his own journey from the doctor's office to the gym floor to show how God builds mature disciples through resistance, community, daily discipline, and clean form. With an Initial Spiritual Assessment and a closing Spiritual Progress Check, it's a discipleship training plan, one rep at a time.</p>
         <div className="mt-10 flex flex-wrap items-center gap-6">
           {s.book_url ? (
             <a href={s.book_url} target="_blank" rel="noopener noreferrer" className="btn-gold" data-testid="book-buy-button"><BookOpen className="h-4 w-4" /> Get the Book</a>

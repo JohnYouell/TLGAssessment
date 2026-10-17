@@ -38,6 +38,7 @@ Readers of the book working through the discipleship assessments; small-group le
 - 2026-10-17 Book & Sharing admin (/admin/sharing; GET /api/sharing public, PUT /api/admin/sharing admin-only): book_url (blank for now), email subject and Spread the Word message. When the link is set, Welcome box 02 gets a "here" link and the share message ends with "Get the book: <url>" (no sign-up link). /spread-the-word offers Email, Text/SMS and Copy Message.
 - 2026-10-17 Share preview card: public /book page (gold emblem placeholder cover at /book-cover-placeholder.png, description, Get the Book button using the admin book_url or "Purchase link coming soon"). index.html has Open Graph/Twitter tags (title, description, 1200x630 /og-image.jpg, URLs from %REACT_APP_BACKEND_URL%). The Spread the Word message now always ends with "Get the book: <site>/book". User confirmed the Chapter Reviews stay removed (the original brief is reference only).
 - 2026-10-17 Real book cover (https://i.ibb.co/WNw6LK8s/TLG-Book-Cover.jpg, saved as public/book-cover.jpg) rendered as an angled 3D book with a simulated spine (gold "THE LORD'S GYM", white "JOHN YOUELL, JR.") at public/book-3d.webp, used on /book. og-image.jpg regenerated with the 3D book and "By John Youell, Jr."
+- 2026-10-17 The Welcome "Read the Book" box (02) shows the 3D book in its top-right corner, linking to /book. The /book page uses the user's verbatim back-cover blurb.
 
 ## Assumptions
 - A1's overall total uses the same /125 total tiers as A7
