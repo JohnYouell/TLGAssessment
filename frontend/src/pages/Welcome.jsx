@@ -48,7 +48,7 @@ export default function Welcome({ firstVisit = false }) {
             <h3 className={`mt-4 font-heading text-xl uppercase tracking-wide ${s.s.text}`}>{s.t}</h3>
             <p className={`mt-2 text-sm ${s.s.text}`}>
               {s.k === "02" && sharing?.book_url ? (
-                <>Grab a copy of the book <a href={sharing.book_url} target="_blank" rel="noopener noreferrer" className="font-semibold text-gold underline underline-offset-4 hover:text-black" data-testid="welcome-book-link">here</a>.</>
+                <>Grab a copy of the book <a href={sharing.book_url} target="_blank" rel="noopener noreferrer" className="font-bold text-black underline decoration-gold decoration-2 underline-offset-4 transition-colors duration-150 hover:text-zinc-600" data-testid="welcome-book-link">here</a>.</>
               ) : s.d}
             </p>
           </div>
