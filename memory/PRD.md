@@ -36,6 +36,7 @@ Readers of the book working through the discipleship assessments; small-group le
 
 - 2026-10-17 Chapter Reviews removed (they live in the book, not in the 7 Reps). The app is now just the 7 Reps: A1 is free; A2–A6 open all at once for All-Access users; A7 opens after A2–A6. The /chapter/:n pages are gone, and the videos are now 5 Section Review wrap-ups (admin keys section_2..section_6) shown on each section result page with Spread the Word. Spread the Word and Join the Conversation also appear on /congrats/initial. The Chapter Reviews list was removed from Master Results.
 - 2026-10-17 Book & Sharing admin (/admin/sharing; GET /api/sharing public, PUT /api/admin/sharing admin-only): book_url (blank for now), email subject and Spread the Word message. When the link is set, Welcome box 02 gets a "here" link and the share message ends with "Get the book: <url>" (no sign-up link). /spread-the-word offers Email, Text/SMS and Copy Message.
+- 2026-10-17 Share preview card: public /book page (gold emblem placeholder cover at /book-cover-placeholder.png, description, Get the Book button using the admin book_url or "Purchase link coming soon"). index.html has Open Graph/Twitter tags (title, description, 1200x630 /og-image.jpg, URLs from %REACT_APP_BACKEND_URL%). The Spread the Word message now always ends with "Get the book: <site>/book". User confirmed the Chapter Reviews stay removed (the original brief is reference only).
 
 ## Assumptions
 - A1's overall total uses the same /125 total tiers as A7
