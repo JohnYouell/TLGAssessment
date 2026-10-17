@@ -26,6 +26,22 @@ export const usePage = (slug) => {
   return page;
 };
 
+const LINK_RE = /(https?:\/\/[^\s,]*[^\s.,]|www\.[^\s,]*[^\s.,]|(?:Facebook|X) at @\w+)/g;
+const SOCIAL = { Facebook: "https://www.facebook.com/", X: "https://x.com/" };
+
+const linkFor = (part) => {
+  const social = part.match(/^(Facebook|X) at @(\w+)$/);
+  if (social) return [`${social[1]} at `, `@${social[2]}`, `${SOCIAL[social[1]]}${social[2]}`];
+  return ["", part, part.startsWith("http") ? part : `https://${part}`];
+};
+
+export const Linkified = ({ text }) =>
+  text.split(LINK_RE).map((part, i) => {
+    if (i % 2 === 0) return part;
+    const [prefix, label, href] = linkFor(part);
+    return <span key={i}>{prefix}<a href={href} target="_blank" rel="noopener noreferrer" className="text-link underline">{label}</a></span>;
+  });
+
 export const InfoPage = ({ slug, testId, children }) => {
   const page = usePage(slug);
   if (!page) return <Loader />;
@@ -37,7 +53,7 @@ export const InfoPage = ({ slug, testId, children }) => {
       {slug === "about" && <div className="mt-10"><AuthorPhoto url={page.photo_url} /></div>}
       <div className="mt-10 space-y-6 text-base leading-relaxed text-zinc-300 md:text-lg" data-testid={`${slug}-body`}>
         {page.body.split(/\n\s*\n/).map((para, i) => (
-          <p key={i} className="whitespace-pre-line">{para}</p>
+          <p key={i} className="whitespace-pre-line"><Linkified text={para} /></p>
         ))}
         {children}
       </div>

@@ -41,6 +41,15 @@ export default function BookPage() {
         </div>
       </div>
     </div>
+      <section className="mt-20 grid items-center gap-8 border-t border-line pt-14 sm:grid-cols-12" data-testid="book-author">
+        <img src="/author-photo.jpg" alt="John Youell, Jr." className="aspect-[4/5] w-40 rounded-sm border-2 border-gold object-cover sm:col-span-3 sm:w-full sm:max-w-[220px]" data-testid="book-author-photo" />
+        <div className="sm:col-span-9">
+          <p className="eyebrow">About the Author</p>
+          <h2 className="mt-2 font-accent text-2xl font-bold text-white sm:text-3xl">John Youell, Jr.</h2>
+          <p className="mt-4 max-w-2xl text-base leading-relaxed text-zinc-300" data-testid="book-author-bio">John Youell, Jr. is the Lead Pastor of New Life Church in Oklahoma City and the founder and CEO of KingdomWay, which equips people to advance God's kingdom in their everyday lives. A preacher's kid with more than 40 years of continuous ministry, he is a church planter, speaker, singer-songwriter, worship leader, recording artist, and podcaster. John is the author of <em>The Lord's Gym</em>. He and his wife, Shandra, have three grown children.</p>
+          <Link to="/about" className="text-link mt-5 inline-flex items-center gap-2 text-sm" data-testid="book-author-more-link">More about John <ArrowRight className="h-4 w-4" /></Link>
+        </div>
+      </section>
       {endo?.items.length > 0 && <Endorsements layout={endo.layout} items={endo.items} />}
     </div>
   );
