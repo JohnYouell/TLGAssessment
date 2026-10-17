@@ -1,0 +1,27 @@
+{
+  "summary": "Tested the removal of the chapter reviews (7 Reps only), backend and UI. Backend: the new test_lords_gym_seven_reps.py ran 12 tests and all passed. They covered: exactly 7 assessments (ids 1-7) with kinds initial/section/final and no chapter kind; ids 101 and 117 return 404; a free user gets the paywall on A2-A7 (402 on GET); paid and admin users have A1-A6 unlocked with A7 locked by sequence (403); the video keys are exactly 3 general keys plus section_2..6, with section URLs hidden for free users; admin video save ignores chapter_1; non-admin save returns 403; a section submitted out of order (A4 first) works; A7 unlocks after A1-A6 are done; master-results has only the rows/total/reviews keys (5 each); the scorecard PDF starts with %PDF. UI: Free dashboard has the 'Initial Spiritual Assessment' heading with only card 1, and A2-A7 each show a padlock and an Unlock button. The paywall modal lists 'Section review wrap-up videos' and does not mention chapters. /chapter/1 redirects to /. A1 submitted through the UI lands on /congrats/initial with Spread the Word and Join the Conversation; Join opens the paywall and Spread goes to /spread-the-word. /videos shows training-video-1..5 (locked for free, placeholders for paid, no 6th). Admin dashboard: A2-A6 show Start Rep, A7 shows Locked. Completing A2 in the UI gives a result page with section-video-block, the section-video placeholder and Spread the Word (href /spread-the-word), and no Join button. /admin/videos shows 8 rows (registration_thanks, initial_congrats, pastor_final, section_2..6) with no chapter rows; saving shows a toast and persists after reload. Paid user's /master-results shows the 5-row table, the Section Reviews list and no Chapter Reviews; the PDF downloads as Lords-Gym-Training-Scorecard.pdf. The A1 result page has no section video block.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "/master-results Section Reviews", "issues": ["The 5 reviews sit in a 3-column grid, so the second row has an empty 6th cell that still has the surface background. It looks like a missing item. Consider sm:grid-cols-2 lg:grid-cols-5, or giving the last item col-span-2."]}
+    ]
+  },
+  "test_report_links": ["/app/backend/tests/test_lords_gym_seven_reps.py", "/app/backend/tests/seed_rep7_users.py", "/app/test_reports/pytest/pytest_seven_reps.xml"],
+  "action_items": [
+    "Optional: fix the empty 6th cell in the Master Results Section Reviews grid",
+    "Optional: update or remove the stale assertions in the older test files (test_lords_gym_paywall.py expects 24 items and chapter ids 101-117), which now fail by design"
+  ],
+  "critical_code_review_comments": [
+    "server.py is still about 800 lines; consider splitting the payments, videos and cron code into router modules",
+    "run_journey_nudges compares the completed count against len(ASSESSMENTS)=7. Leftover progress docs for old chapter ids (101-117) would inflate the count; there are none in the DB now, but on prod consider deleting progress with assessment_id > 7 at startup"
+  ],
+  "updated_files": ["/app/backend/tests/test_lords_gym_seven_reps.py", "/app/backend/tests/seed_rep7_users.py"],
+  "success_rate": {"backend": "100%", "frontend": "100%"},
+  "test_credentials": "Seeded directly in Mongo with password Test1234!: TEST_free7@example.com, TEST_paid7@example.com (has_access true) and the admin john.youell@newlifeokc.org. All were deleted afterwards.",
+  "seed_data_creation": "Run 'python /app/backend/tests/seed_rep7_users.py seed' before the tests and 'clean' afterwards. All test users and progress were cleaned, and settings 'videos' was deleted. DB users=0, progress=0.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Run: python backend/tests/seed_rep7_users.py seed && pytest backend/tests/test_lords_gym_seven_reps.py -n0. TestPaidJourney submits A7 and downloads the scorecard, which sends real Brevo emails to TEST_paid7@example.com. The older test_lords_gym_paywall.py assumes 24 items and is outdated."
+}
