@@ -5,10 +5,12 @@ import { useAuth } from "@/context/AuthContext";
 import { ScriptureBanner } from "@/components/ScriptureBanner";
 
 const GOLD_BOX = { box: "bg-gold", num: "text-white", text: "text-black" };
+const WHITE_BOX = { box: "bg-white", num: "text-gold", text: "text-black" };
 const STEPS = [
   { k: "01", t: "Create your account", d: "Your progress is saved to your profile, rep by rep.", s: GOLD_BOX },
-  { k: "02", t: "Complete 7 reps", d: "Seven sequential assessments that follow the book.", s: { box: "bg-white", num: "text-gold", text: "text-black" } },
-  { k: "03", t: "See your growth", d: "Compare Day 1 to Today across all five sections.", s: GOLD_BOX },
+  { k: "02", t: "Read the book", d: "Grab a copy of the book here.", s: WHITE_BOX },
+  { k: "03", t: "Complete 7 reps", d: "Seven sequential assessments that follow the book.", s: GOLD_BOX },
+  { k: "04", t: "See your growth", d: "Compare the Initial assessment vs all five sections.", s: WHITE_BOX },
 ];
 
 export default function Welcome({ firstVisit = false }) {
@@ -37,10 +39,10 @@ export default function Welcome({ firstVisit = false }) {
         </div>
       </section>
       <ScriptureBanner />
-      <section className="mx-auto grid max-w-7xl gap-px bg-line px-0 sm:grid-cols-3">
+      <section className="mx-auto grid max-w-7xl gap-px bg-line px-0 sm:grid-cols-2 lg:grid-cols-4">
         {STEPS.map((s) => (
           <div key={s.k} className={`${s.s.box} px-8 py-12`} data-testid={`welcome-step-${s.k}`}>
-            <span className={`font-heading text-5xl font-bold ${s.s.num}`}>{s.k}</span>
+            <span className={`font-heading text-7xl font-bold leading-none lg:text-8xl ${s.s.num}`}>{s.k}</span>
             <h3 className={`mt-4 font-heading text-xl uppercase tracking-wide ${s.s.text}`}>{s.t}</h3>
             <p className={`mt-2 text-sm ${s.s.text}`}>{s.d}</p>
           </div>
