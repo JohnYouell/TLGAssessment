@@ -1,0 +1,18 @@
+{
+  "summary": "Frontend-only retest of the scripture banner blink fix. All checks PASS. Code: ScriptureBanner.jsx has no AnimatePresence or framer-motion. All 7 verse <p> elements are stacked with [grid-area:1/1] and crossfade via transition-opacity duration-700. Only the active one has data-testid=scripture-verse. Welcome page: at 1920px and 390px, sampled every 100ms for 30s (302 samples) plus a rAF opacity sampler (1801 frames). The banner height was constant (102px desktop, 114px mobile), the banner top was constant (745 / 705.4), and the welcome-step-01 y was constant (847 / 819.4). The highest opacity across all verse <p> never fell below 0.5175, with 0 frames below 0.45. That means a true crossfade with no blank frame. Verse text changed every 7.0s (6.3s, 13.3s, 20.3s, 27.3s). Admin /admin/verses (john.youell, after a hard reload): the reference placeholder is 'Reference or source (e.g. 1 Timothy 4:7 or The Lord's Gym, Ch. 3)', translation 'NIV (blank for quotes)', text 'Verse or book quote text'. The description mentions book quotes and leaving the translation blank. The add button reads 'Add Verse or Quote'.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": [],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "Minor: AdminVerses add() still defaults translation to 'NIV', so the admin has to clear it for book quotes (the placeholder explains this). Optional change.",
+    "Minor: the banner <p> elements use key={idx}. Fine for a read-only banner."
+  ],
+  "updated_files": ["/app/test_reports/iteration_8.json"],
+  "success_rate": {"backend": "N/A (skipped)", "frontend": "100% (3/3 checks)"},
+  "seed_data_creation": "Seeded the admin with 'python3 /app/tests/seed_users.py seed', then ran cleanup: users deleted, login_attempts cleared, settings {_id:'verses'} deleted. No settings were modified during the test.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Banner crossfade is verified. The browser_automation tool fails on triple-quoted Python strings, so load long JS from a file with open(path).read(). Seed/cleanup: python3 /app/tests/seed_users.py seed|cleanup (run from /app/backend).",
+  "rca of the issue": "Earlier blink: AnimatePresence mode='wait' unmounted the old verse before the new one faded in. Fixed with stacked grid-cell CSS opacity crossfade. Verified that the highest opacity stays at or above 0.52 during transitions."
+}
