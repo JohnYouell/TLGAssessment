@@ -1,0 +1,39 @@
+{
+  "summary": "Tested the two-tier paywall end to end, backend and UI. Backend: 18 pytest checks, all passed. They covered lock and tier states for the 24 items, 402 on paid items for a free user, 403 sequence locks, the quote math for all codes, a real Stripe test checkout URL with a pending status, 100% code grants, admin code CRUD and 403 for non-admins, admin video save with Vimeo-only validation, video URLs hidden from free users, section and final unlocks, the pastor gate on A7, and master results. The full journey also passed in the UI. Free user: dashboard tier sections with 6 padlocks; paywall title and $40.00; EarlyAdopters shows a struck $40.00 and $20.00; checkout redirects to checkout.stripe.com; A1 lands on /congrats/initial; chapter 1 lands on /chapter/1 with the headline, a locked video with an unlock button, Spread the Word (goes to the /spread-the-word draft) and Join the Conversation (opens the paywall). Paid user: TLG Staff turns the button into Unlock Now, shows a toast and clears the padlocks; the pastor gate's Continue to Questions shows 25 questions; submit goes to the result page; /master-results shows the table (Day 1 75, Today 125), 5 section reviews and 17 chapter reviews. Admin: /admin/codes create, edit, toggle and delete all work; /admin/videos shows a friendly error for a non-Vimeo URL and saves. Header heights were measured at 3 widths.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "POST /api/payments/checkout", "issue": "stripe.Price.list(...).data[0] and Session.create have no error handling. A missing price lookup_key or any StripeError gives an unhandled 500 instead of a friendly message."},
+      {"endpoint": "POST /api/payments/checkout", "issue": "success_url and cancel_url are built from the client-supplied origin_url (open redirect). Prefer FRONTEND_URL from env, or check against an allowlist."},
+      {"endpoint": "GET /api/payments/status/{session_id}", "issue": "No auth or ownership check (anyone with a session id can poll it). Low risk."},
+      {"endpoint": "PUT /api/admin/videos", "issue": "Replaces the whole videos map, so a partial payload wipes the other keys. The admin UI sends the full map, so the UI is unaffected."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Header", "issues": ["Measured header height (including the gold bottom border) is 148px at 1920, 98px at 900 and 77px at 390. The target was about 138px at 1920. The logo is 83/58/48px and the byline is 20.8/14.4/12px, so it scales correctly; it is just about 10px taller than the target at desktop. No horizontal overflow."]},
+      {"screen": "/chapter/:n (free user)", "issues": ["Free users get no 'Next Rep' or back-to-dashboard button, only Spread the Word and Join the Conversation. The only way to the next chapter is the header Dashboard link. Consider adding a secondary 'Back to Dashboard' link."]},
+      {"screen": "/chapter/1 (paid)", "issues": ["The Vimeo iframe (player.vimeo.com/video/76979871) showed 'Player error' in headless Chromium. Probably a headless/DRM limitation; check in a real browser."]}
+    ]
+  },
+  "test_report_links": ["/app/backend/tests/test_lords_gym_paywall.py"],
+  "action_items": [
+    "Wrap the Stripe calls in /payments/checkout in try/except (IndexError and stripe.error.StripeError) and return a 502/400 with a friendly message",
+    "Build Stripe success/cancel URLs from FRONTEND_URL rather than client origin_url",
+    "Optional: add a Dashboard link on the free-user chapter completion page",
+    "Optional: trim the header to about 138px at desktop if that target is strict"
+  ],
+  "critical_code_review_comments": [
+    "server.py is 805 lines; consider splitting the paywall, payments and videos code into a router module",
+    "Each checkout click inserts a new pending payment_transactions row; old pending rows are never cleaned up unless the Stripe webhook expires them"
+  ],
+  "updated_files": ["/app/backend/tests/test_lords_gym_paywall.py"],
+  "success_rate": {"backend": "100%", "frontend": "100%"},
+  "test_credentials": "Free and paid users existed in the DB. The admin was seeded directly in Mongo. All three were deleted afterwards as instructed.",
+  "seed_data_creation": "Seeded admin john.youell@newlifeokc.org (bcrypt). Afterwards deleted test_free, test_paid and the admin, plus their progress (26) and payment_transactions (4), settings 'videos' and the TEST codes. Reset uses to 0 on the 4 default codes and cleared login_attempts.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "test_lords_gym_paywall.py expects fresh users: test_free (no progress) and test_paid (has_access false), plus the admin. pytest.ini uses xdist; run with -n0 for the ordered PaidJourney class. A7 submit sends one real Brevo email. The 'chapter_sequence' test needs a test_free user with no progress."
+}

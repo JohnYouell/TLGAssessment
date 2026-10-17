@@ -75,6 +75,7 @@ export function ChapterComplete() {
           <button type="button" onClick={openPaywall} className="btn-gold" data-testid="join-conversation-button"><Users className="h-4 w-4" /> Join the Conversation</button>
         )}
       </div>
+      {!v.has_access && <Link to="/dashboard" className="text-link inline-block text-sm" data-testid="chapter-dashboard-link">Back to Dashboard</Link>}
     </Shell>
   );
 }

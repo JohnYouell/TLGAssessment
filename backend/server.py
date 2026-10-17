@@ -385,16 +385,22 @@ async def checkout(body: CheckoutIn, user: User = Depends(get_current_user)):
         await db.discount_codes.update_one({"_id": d["_id"]}, {"$inc": {"uses": 1}})
         await grant_access(user.id, f"code:{d['code']}")
         return {"granted": True}
-    price = stripe.Price.list(lookup_keys=[PACKAGE_LOOKUP_KEY], active=True, limit=1).data[0]
-    origin = body.origin_url.rstrip("/")
-    session = stripe.checkout.Session.create(
+    try:
+        price = stripe.Price.list(lookup_keys=[PACKAGE_LOOKUP_KEY], active=True, limit=1).data[0]
+        allowed = [u.strip().rstrip("/") for u in os.environ["FRONTEND_URL"].split(",")]
+        origin = body.origin_url.rstrip("/")
+        origin = origin if origin in allowed else os.environ["SITE_URL"].rstrip("/")
+        session = stripe.checkout.Session.create(
         line_items=[{"price_data": {"currency": "usd", "product": price.product, "unit_amount": int(round(total * 100))}, "quantity": 1}],
         mode="payment", customer_email=user.email,
         success_url=f"{origin}/payment/success?session_id={{CHECKOUT_SESSION_ID}}",
         cancel_url=f"{origin}/payment/cancel",
         metadata={"user_id": user.id, "code": d["code"] if d else ""},
         managed_payments={"enabled": True},
-    )
+        )
+    except (IndexError, stripe.error.StripeError) as exc:
+        logger.warning("Stripe checkout failed: %s", exc)
+        raise HTTPException(502, "Checkout is temporarily unavailable. Please try again shortly.")
     await db.payment_transactions.insert_one({
         "session_id": session.id, "user_id": user.id, "amount": float(total), "currency": "usd",
         "code_id": d["_id"] if d else None, "status": "initiated", "payment_status": "pending",
@@ -476,8 +482,9 @@ async def get_videos(user: User = Depends(get_current_user)):
 
 @api.put("/admin/videos")
 async def put_videos(body: VideosIn, admin: User = Depends(require_admin)):
-    vids = {k: v.model_dump() for k, v in body.videos.items() if k in VIDEO_KEYS}
-    await db.settings.update_one({"_id": "videos"}, {"$set": {"videos": vids, "updated_by": admin.email}}, upsert=True)
+    current = await load_videos()
+    current.update({k: v.model_dump() for k, v in body.videos.items() if k in VIDEO_KEYS})
+    await db.settings.update_one({"_id": "videos"}, {"$set": {"videos": current, "updated_by": admin.email}}, upsert=True)
     return {"videos": await load_videos()}
 
 
