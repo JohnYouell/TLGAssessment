@@ -14,7 +14,7 @@ const PaywallBody = ({ onDone }) => {
   const [code, setCode] = useState("");
   const [quote, setQuote] = useState(null);
   const [busy, setBusy] = useState(false);
-  const total = quote ? quote.total : 40;
+  const total = quote ? quote.total : 25;
 
   const apply = async () => {
     try {
@@ -51,7 +51,7 @@ const PaywallBody = ({ onDone }) => {
         {FEATURES.map((f) => <li key={f} className="flex items-center gap-2"><Check className="h-4 w-4 text-gold" />{f}</li>)}
       </ul>
       <div className="flex items-end gap-3" data-testid="paywall-price">
-        {quote && quote.percent_off > 0 && <span className="font-heading text-2xl text-zinc-500 line-through">$40.00</span>}
+        {quote && quote.percent_off > 0 && <span className="font-heading text-2xl text-zinc-500 line-through">$25.00</span>}
         <span className="font-heading text-5xl font-bold text-white">${total.toFixed(2)}</span>
         <span className="pb-1 text-xs uppercase tracking-widest text-zinc-400">one-time</span>
       </div>

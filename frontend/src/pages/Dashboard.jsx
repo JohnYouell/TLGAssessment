@@ -81,7 +81,7 @@ export default function Dashboard() {
             <p className="eyebrow">All-Access {locked && "· Locked"}</p>
             <h2 className="mt-2 font-accent text-2xl font-bold text-white">Section Reviews, Final Assessment & Videos</h2>
           </div>
-          {locked && <button type="button" onClick={openPaywall} className="btn-gold" data-testid="dashboard-unlock-button"><Lock className="h-4 w-4" /> Unlock Full Access · $40</button>}
+          {locked && <button type="button" onClick={openPaywall} className="btn-gold" data-testid="dashboard-unlock-button"><Lock className="h-4 w-4" /> Unlock Full Access · $25</button>}
         </div>
         <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {paid.map((a, i) => <AssessmentCard key={a.id} a={a} index={i} />)}

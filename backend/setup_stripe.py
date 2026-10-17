@@ -9,7 +9,7 @@ stripe.api_key = os.environ["STRIPE_SECRET_KEY"]
 
 PRODUCT_ID = "tlg_full_access"
 LOOKUP_KEY = "tlg_full_access_40"
-AMOUNT = 4000
+AMOUNT = 2500
 
 
 def get_or_create_product():

@@ -63,7 +63,7 @@ export default function AdminCodes() {
       <Link to="/dashboard" className="text-link inline-flex items-center gap-2 text-sm"><ArrowLeft className="h-4 w-4" /> Dashboard</Link>
       <p className="eyebrow mt-8">Admin</p>
       <h1 className="mt-3 font-heading text-4xl font-bold uppercase text-white sm:text-5xl">Discount Codes</h1>
-      <p className="mt-3 text-zinc-400">Full Access is $40.00. Codes aren&apos;t case-sensitive and spaces are ignored. 100% codes unlock access without checkout.</p>
+      <p className="mt-3 text-zinc-400">Full Access is $25.00. Codes aren&apos;t case-sensitive and spaces are ignored. 100% codes unlock access without checkout.</p>
       <div className="mt-10 space-y-3">{codes.map((c) => <CodeRow key={c.id} c={c} onSave={save} onDelete={del} />)}</div>
       <form onSubmit={create} className="mt-10 flex flex-wrap items-end gap-3 border-t border-line pt-8" data-testid="code-create-form">
         <Input value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value })} placeholder="New code name" required minLength={2} maxLength={40} className="field w-60" data-testid="code-new-name" />
