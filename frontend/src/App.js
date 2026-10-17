@@ -17,6 +17,11 @@ import AdminPage from "@/pages/AdminPage";
 import About from "@/pages/About";
 import Contact from "@/pages/Contact";
 import { Footer } from "@/components/Footer";
+import { PaywallProvider } from "@/context/PaywallContext";
+import { PaymentSuccess, PaymentCancel } from "@/pages/Payment";
+import { ThankYou, InitialCongrats, ChapterComplete, SpreadTheWord, TrainingVideos } from "@/pages/VideoPages";
+import AdminCodes from "@/pages/AdminCodes";
+import AdminVideos from "@/pages/AdminVideos";
 
 const guard = (el) => <ProtectedRoute>{el}</ProtectedRoute>;
 
@@ -33,6 +38,7 @@ function App() {
     <div className="App flex min-h-screen flex-col bg-ink text-white">
       <BrowserRouter>
         <AuthProvider>
+          <PaywallProvider>
           <ScrollToTop />
           <Header />
           <main className="flex-1">
@@ -40,7 +46,15 @@ function App() {
               <Route path="/" element={<Welcome />} />
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
-              <Route path="/welcome" element={guard(<Welcome firstVisit />)} />
+              <Route path="/welcome" element={guard(<ThankYou />)} />
+              <Route path="/congrats/initial" element={guard(<InitialCongrats />)} />
+              <Route path="/chapter/:n" element={guard(<ChapterComplete />)} />
+              <Route path="/spread-the-word" element={<SpreadTheWord />} />
+              <Route path="/videos" element={guard(<TrainingVideos />)} />
+              <Route path="/payment/success" element={guard(<PaymentSuccess />)} />
+              <Route path="/payment/cancel" element={guard(<PaymentCancel />)} />
+              <Route path="/admin/codes" element={guard(<AdminCodes />)} />
+              <Route path="/admin/videos" element={guard(<AdminVideos />)} />
               <Route path="/dashboard" element={guard(<Dashboard />)} />
               <Route path="/assessment/:id" element={guard(<Quiz />)} />
               <Route path="/assessment/:id/result" element={guard(<Result />)} />
@@ -54,6 +68,7 @@ function App() {
           </main>
           <Footer />
           <Toaster theme="dark" position="top-center" />
+          </PaywallProvider>
         </AuthProvider>
       </BrowserRouter>
     </div>

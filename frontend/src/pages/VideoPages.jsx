@@ -1,0 +1,114 @@
+import { useEffect, useState } from "react";
+import { Link, useParams } from "react-router-dom";
+import { ArrowRight, Megaphone, Users } from "lucide-react";
+import { api } from "@/lib/api";
+import { useAuth } from "@/context/AuthContext";
+import { usePaywall } from "@/context/PaywallContext";
+import { VideoEmbed } from "@/components/VideoEmbed";
+import { Loader } from "@/components/Loader";
+
+const useVideoData = () => {
+  const [data, setData] = useState(null);
+  useEffect(() => {
+    api.get("/videos").then((r) => setData(r.data));
+  }, []);
+  return data;
+};
+
+const Shell = ({ eyebrow, title, testId, children }) => (
+  <div className="mx-auto max-w-4xl px-5 py-14 text-center sm:px-8 lg:py-20" data-testid={testId}>
+    <p className="eyebrow">{eyebrow}</p>
+    <h1 className="mt-3 font-accent text-3xl font-bold text-white sm:text-5xl" data-testid={`${testId}-title`}>{title}</h1>
+    <div className="mx-auto mt-6 h-[4pt] w-24 bg-gold" />
+    <div className="mt-10 space-y-10">{children}</div>
+  </div>
+);
+
+export function ThankYou() {
+  const v = useVideoData();
+  const { user } = useAuth();
+  if (!v) return <Loader />;
+  return (
+    <Shell eyebrow={`Welcome, ${user.name.split(" ")[0]}`} title={v.videos.registration_thanks.title || "Thank You for Joining The Lord's Gym"} testId="thank-you-page">
+      <VideoEmbed url={v.videos.registration_thanks.url} label="Thank-you video placeholder" testId="thank-you-video" />
+      <Link to="/assessment/1" className="btn-gold" data-testid="thank-you-start-button">Start the Initial Assessment <ArrowRight className="h-4 w-4" /></Link>
+    </Shell>
+  );
+}
+
+export function InitialCongrats() {
+  const v = useVideoData();
+  if (!v) return <Loader />;
+  return (
+    <Shell eyebrow="Initial Assessment Complete" title={v.videos.initial_congrats.title || "Congratulations! Your Baseline Is Set."} testId="initial-congrats-page">
+      <VideoEmbed url={v.videos.initial_congrats.url} label="Congratulations video placeholder" testId="initial-congrats-video" />
+      <div className="flex flex-wrap justify-center gap-6">
+        <Link to="/assessment/1/result" className="btn-gold" data-testid="initial-congrats-result-button">See My Results <ArrowRight className="h-4 w-4" /></Link>
+        <Link to="/dashboard" className="text-link self-center" data-testid="initial-congrats-dashboard-link">Go to Dashboard</Link>
+      </div>
+    </Shell>
+  );
+}
+
+export function ChapterComplete() {
+  const { n } = useParams();
+  const v = useVideoData();
+  const { openPaywall } = usePaywall();
+  const [res, setRes] = useState(null);
+
+  useEffect(() => {
+    api.get(`/assessments/${100 + Number(n)}/result`).then((r) => setRes(r.data)).catch(() => {});
+  }, [n]);
+
+  if (!v) return <Loader />;
+  const vid = v.videos[`chapter_${n}`];
+  return (
+    <Shell eyebrow={`Chapter ${n} Review Complete${res ? ` · ${res.score}/${res.max_score}` : ""}`} title={vid.title || `Chapter ${n} Wrap-Up & What's Next`} testId="chapter-complete-page">
+      <VideoEmbed url={vid.url} label={`Chapter ${n} video placeholder`} locked={!v.has_access} onUnlock={openPaywall} testId="chapter-video" />
+      <div className="flex flex-wrap justify-center gap-4">
+        <Link to="/spread-the-word" className="inline-flex items-center gap-2 rounded-sm border-2 border-gold px-7 py-3 font-heading text-sm uppercase tracking-[0.18em] text-gold transition-colors duration-150 hover:bg-gold hover:text-black" data-testid="spread-the-word-button">
+          <Megaphone className="h-4 w-4" /> Spread the Word
+        </Link>
+        {v.has_access ? (
+          <Link to="/dashboard" className="btn-gold" data-testid="chapter-next-button">Next Rep <ArrowRight className="h-4 w-4" /></Link>
+        ) : (
+          <button type="button" onClick={openPaywall} className="btn-gold" data-testid="join-conversation-button"><Users className="h-4 w-4" /> Join the Conversation</button>
+        )}
+      </div>
+    </Shell>
+  );
+}
+
+const SHARE_TEXT = "I've been working through The Lord's Gym: Discipleship Training, One Rep at a Time, and it's been helping me grow in my walk with Christ, one rep at a time. I'd love for you to grab a copy of the book and join the conversation with me.";
+
+export function SpreadTheWord() {
+  const link = `${window.location.origin}/register`;
+  const body = `${SHARE_TEXT}\n\nStart here: ${link}`;
+  return (
+    <Shell eyebrow="Spread the Word" title="Invite a Friend to Train" testId="spread-word-page">
+      <p className="mx-auto max-w-2xl whitespace-pre-line rounded-sm border border-line bg-surface p-6 text-left text-zinc-200" data-testid="spread-word-message">{body}</p>
+      <p className="text-xs text-zinc-500">[Draft message: final wording and book purchase link to be added]</p>
+      <a href={`mailto:?subject=${encodeURIComponent("Join me at The Lord's Gym")}&body=${encodeURIComponent(body)}`} className="btn-gold" data-testid="spread-word-email-button">Email a Friend</a>
+    </Shell>
+  );
+}
+
+export function TrainingVideos() {
+  const v = useVideoData();
+  const { openPaywall } = usePaywall();
+  if (!v) return <Loader />;
+  return (
+    <div className="mx-auto max-w-6xl px-5 py-14 sm:px-8" data-testid="training-videos-page">
+      <p className="eyebrow">All-Access</p>
+      <h1 className="mt-3 font-heading text-4xl font-bold uppercase text-white sm:text-5xl">Training Videos</h1>
+      <div className="mt-10 grid gap-8 md:grid-cols-2">
+        {Array.from({ length: 17 }, (_, i) => i + 1).map((n) => (
+          <div key={n} className="space-y-3" data-testid={`training-video-${n}`}>
+            <p className="font-heading uppercase tracking-wide text-white">{v.videos[`chapter_${n}`].title || `Chapter ${n} Wrap-Up`}</p>
+            <VideoEmbed url={v.videos[`chapter_${n}`].url} label={`Chapter ${n} video placeholder`} locked={!v.has_access} onUnlock={openPaywall} testId={`training-video-${n}-player`} />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}

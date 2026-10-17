@@ -19,7 +19,9 @@ from starlette.middleware.cors import CORSMiddleware
 
 from assessments_config import (
     ASSESSMENTS, SECTIONS, SCALE_MAX, BASELINE_ASSESSMENT_ID, FINAL_ASSESSMENT_ID, TOTAL_125_TIERS,
+    SECTION_CHAPTERS, CHAPTER_BASE,
 )
+import stripe
 from scorecard import build_scorecard_pdf
 from brevo import create_contact, send_scorecard_email, send_welcome_email, send_reminder_email, send_nudge_email, send_completion_email
 import hmac
@@ -62,10 +64,13 @@ class User(BaseDocument):
     created_at: str = ""
     last_activity_at: str = ""
     referred_by: Optional[str] = None
+    has_access: bool = False
+    final_video_watched: bool = False
 
     def public(self):
         return {"id": self.id, "name": self.name, "email": self.email,
-                "marketing_opt_in": self.marketing_opt_in, "is_admin": is_admin(self)}
+                "marketing_opt_in": self.marketing_opt_in, "is_admin": is_admin(self),
+                "has_access": self.has_access or is_admin(self)}
 
 
 class Progress(BaseDocument):
@@ -291,6 +296,199 @@ async def put_page(slug: str, body: PageIn, admin: User = Depends(require_admin)
     return data
 
 
+# ---------- Paywall: discount codes, Stripe checkout, videos ----------
+stripe.api_key = os.environ["STRIPE_SECRET_KEY"]
+PACKAGE_PRICE = 40.00
+PACKAGE_LOOKUP_KEY = "tlg_full_access_40"
+DEFAULT_CODES = [("BeataTeam", 100), ("EarlyAdopters", 50), ("SeniorLeader", 75), ("TLG Staff", 100)]
+
+
+def norm_code(code):
+    return "".join(code.split()).lower()
+
+
+class CodeIn(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True)
+    code: str = Field(min_length=2, max_length=40)
+    percent_off: int = Field(ge=1, le=100)
+    active: bool = True
+
+
+class CheckoutIn(BaseModel):
+    code: Optional[str] = Field(default=None, max_length=40)
+    origin_url: str = Field(default="https://x", pattern=r"^https?://")
+
+
+def code_out(d):
+    return {"id": d["_id"], "code": d["code"], "percent_off": d["percent_off"], "active": d["active"], "uses": d.get("uses", 0)}
+
+
+async def find_code(code):
+    if not code or not code.strip():
+        return None
+    d = await db.discount_codes.find_one({"_id": norm_code(code), "active": True})
+    if not d:
+        raise HTTPException(400, "That discount code isn't valid")
+    return d
+
+
+def price_after(d):
+    return round(PACKAGE_PRICE * (100 - (d["percent_off"] if d else 0)) / 100, 2)
+
+
+async def grant_access(user_id, source):
+    await db.users.update_one({"_id": ObjectId(user_id)}, {"$set": {"has_access": True, "access_source": source, "access_granted_at": now_iso()}})
+
+
+@api.get("/admin/codes")
+async def list_codes(admin: User = Depends(require_admin)):
+    return {"codes": [code_out(d) async for d in db.discount_codes.find().sort("created_at", 1)]}
+
+
+@api.post("/admin/codes")
+async def create_code(body: CodeIn, admin: User = Depends(require_admin)):
+    key = norm_code(body.code)
+    if await db.discount_codes.find_one({"_id": key}):
+        raise HTTPException(400, "A code with that name already exists")
+    doc = {"_id": key, **body.model_dump(), "uses": 0, "created_at": now_iso()}
+    await db.discount_codes.insert_one(doc)
+    return code_out(doc)
+
+
+@api.put("/admin/codes/{code_id}")
+async def update_code(code_id: str, body: CodeIn, admin: User = Depends(require_admin)):
+    res = await db.discount_codes.update_one({"_id": code_id}, {"$set": {"percent_off": body.percent_off, "active": body.active}})
+    if not res.matched_count:
+        raise HTTPException(404, "Code not found")
+    return code_out(await db.discount_codes.find_one({"_id": code_id}))
+
+
+@api.delete("/admin/codes/{code_id}")
+async def delete_code(code_id: str, admin: User = Depends(require_admin)):
+    await db.discount_codes.delete_one({"_id": code_id})
+    return {"ok": True}
+
+
+@api.post("/payments/quote")
+async def quote(body: CheckoutIn, user: User = Depends(get_current_user)):
+    d = await find_code(body.code)
+    return {"price": PACKAGE_PRICE, "percent_off": d["percent_off"] if d else 0, "total": price_after(d)}
+
+
+@api.post("/payments/checkout")
+async def checkout(body: CheckoutIn, user: User = Depends(get_current_user)):
+    if has_access(user):
+        raise HTTPException(400, "You already have Full Access")
+    d = await find_code(body.code)
+    total = price_after(d)
+    if total <= 0:
+        await db.discount_codes.update_one({"_id": d["_id"]}, {"$inc": {"uses": 1}})
+        await grant_access(user.id, f"code:{d['code']}")
+        return {"granted": True}
+    price = stripe.Price.list(lookup_keys=[PACKAGE_LOOKUP_KEY], active=True, limit=1).data[0]
+    origin = body.origin_url.rstrip("/")
+    session = stripe.checkout.Session.create(
+        line_items=[{"price_data": {"currency": "usd", "product": price.product, "unit_amount": int(round(total * 100))}, "quantity": 1}],
+        mode="payment", customer_email=user.email,
+        success_url=f"{origin}/payment/success?session_id={{CHECKOUT_SESSION_ID}}",
+        cancel_url=f"{origin}/payment/cancel",
+        metadata={"user_id": user.id, "code": d["code"] if d else ""},
+        managed_payments={"enabled": True},
+    )
+    await db.payment_transactions.insert_one({
+        "session_id": session.id, "user_id": user.id, "amount": float(total), "currency": "usd",
+        "code_id": d["_id"] if d else None, "status": "initiated", "payment_status": "pending",
+        "created_at": now_iso(), "updated_at": now_iso(),
+    })
+    return {"checkout_url": session.url, "session_id": session.id}
+
+
+async def mark_paid(session_id, extra=None):
+    res = await db.payment_transactions.find_one_and_update(
+        {"session_id": session_id, "payment_status": {"$ne": "paid"}},
+        {"$set": {"status": "completed", "payment_status": "paid", "updated_at": now_iso(), **(extra or {})}})
+    if res:
+        await grant_access(res["user_id"], f"stripe:{session_id}")
+        if res.get("code_id"):
+            await db.discount_codes.update_one({"_id": res["code_id"]}, {"$inc": {"uses": 1}})
+
+
+@api.get("/payments/status/{session_id}")
+async def payment_status(session_id: str):
+    rec = await db.payment_transactions.find_one({"session_id": session_id})
+    if not rec:
+        raise HTTPException(404, "Transaction not found")
+    if rec["payment_status"] != "paid":
+        try:
+            s = stripe.checkout.Session.retrieve(session_id)
+            if s.payment_status == "paid" or s.status == "complete":
+                await mark_paid(session_id, {"stripe_payment_intent_id": s.payment_intent})
+                rec = await db.payment_transactions.find_one({"session_id": session_id})
+        except stripe.error.StripeError:
+            pass
+    return {"session_id": rec["session_id"], "status": rec["status"], "payment_status": rec["payment_status"]}
+
+
+@api.post("/stripe/webhook")
+async def stripe_webhook(request: Request):
+    payload = await request.body()
+    try:
+        event = stripe.Webhook.construct_event(payload, request.headers.get("stripe-signature", ""), os.environ["STRIPE_WEBHOOK_SECRET"])
+    except (stripe.error.SignatureVerificationError, ValueError):
+        raise HTTPException(400, "Invalid signature")
+    obj, t = event["data"]["object"], event["type"]
+    if t in ("checkout.session.completed", "checkout.session.async_payment_succeeded") and obj.get("payment_status") == "paid":
+        await mark_paid(obj["id"], {"stripe_payment_intent_id": obj.get("payment_intent")})
+    elif t in ("checkout.session.expired", "checkout.session.async_payment_failed"):
+        await db.payment_transactions.update_one({"session_id": obj["id"], "payment_status": {"$ne": "paid"}},
+                                                 {"$set": {"status": "expired", "payment_status": "failed", "updated_at": now_iso()}})
+    return {"status": "ok"}
+
+
+VIDEO_KEYS = ["registration_thanks", "initial_congrats", "pastor_final"] + [f"chapter_{n}" for n in range(1, 18)]
+PAID_VIDEO_KEYS = {"pastor_final"} | {f"chapter_{n}" for n in range(1, 18)}
+
+
+class VideoIn(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True)
+    title: str = Field(default="", max_length=120)
+    url: str = Field(default="", max_length=300, pattern=r"^(https://(www\.|player\.)?vimeo\.com/\S+)?$")
+
+
+class VideosIn(BaseModel):
+    videos: Dict[str, VideoIn]
+
+
+async def load_videos():
+    doc = await db.settings.find_one({"_id": "videos"}) or {}
+    stored = doc.get("videos", {})
+    return {k: {"title": stored.get(k, {}).get("title", ""), "url": stored.get(k, {}).get("url", "")} for k in VIDEO_KEYS}
+
+
+@api.get("/videos")
+async def get_videos(user: User = Depends(get_current_user)):
+    vids = await load_videos()
+    if not has_access(user):
+        for k in PAID_VIDEO_KEYS:
+            vids[k]["url"] = ""
+    return {"videos": vids, "has_access": has_access(user)}
+
+
+@api.put("/admin/videos")
+async def put_videos(body: VideosIn, admin: User = Depends(require_admin)):
+    vids = {k: v.model_dump() for k, v in body.videos.items() if k in VIDEO_KEYS}
+    await db.settings.update_one({"_id": "videos"}, {"$set": {"videos": vids, "updated_by": admin.email}}, upsert=True)
+    return {"videos": await load_videos()}
+
+
+@api.post("/assessments/7/video-watched")
+async def final_video_watched(user: User = Depends(get_current_user)):
+    if not has_access(user):
+        raise HTTPException(402, "Unlock the Full Training Program to access this")
+    await db.users.update_one({"_id": ObjectId(user.id)}, {"$set": {"final_video_watched": True}})
+    return {"ok": True}
+
+
 @api.get("/auth/me")
 async def me(user: User = Depends(get_current_user)):
     return user.public()
@@ -314,8 +512,35 @@ async def user_progress(user_id) -> Dict[int, Progress]:
     return {d["assessment_id"]: Progress.from_mongo(d) for d in docs}
 
 
-def is_unlocked(aid, prog):
-    return aid == 1 or (aid - 1 in prog and prog[aid - 1].status == "completed")
+def done(prog, aid):
+    return aid in prog and prog[aid].status == "completed"
+
+
+def has_access(user):
+    return user.has_access or is_admin(user)
+
+
+def lock_state(a, prog, user):
+    if a["tier"] == "paid" and not has_access(user):
+        return "paywall"
+    kind, aid = a["kind"], a["id"]
+    if kind == "chapter":
+        ok = done(prog, 1) and (a["chapter"] == 1 or done(prog, aid - 1))
+    elif kind == "section":
+        ok = all(done(prog, CHAPTER_BASE + c) for c in SECTION_CHAPTERS[aid])
+    elif kind == "final":
+        ok = all(done(prog, s) for s in SECTION_CHAPTERS)
+    else:
+        ok = True
+    return None if ok else "sequence"
+
+
+def guard(a, prog, user):
+    state = lock_state(a, prog, user)
+    if state == "paywall":
+        raise HTTPException(402, "Unlock the Full Training Program to access this")
+    if state == "sequence":
+        raise HTTPException(403, "Complete the earlier steps first")
 
 
 def get_assessment(aid):
@@ -347,7 +572,7 @@ def result_payload(a, p: Progress):
             sections.append({**s, "score": score, "max": section_max(a["id"], s["id"]),
                              "designation": t["label"], "meaning": t["meaning"]})
     return {
-        "assessment_id": a["id"], "title": a["title"], "subtitle": a["subtitle"],
+        "assessment_id": a["id"], "title": a["title"], "subtitle": a["subtitle"], "kind": a["kind"], "chapter": a["chapter"],
         "score": p.score, "max_score": p.max_score, "designation": p.designation,
         "meaning": p.meaning, "completed_at": p.completed_at, "sections": sections,
     }
@@ -359,28 +584,32 @@ async def list_assessments(user: User = Depends(get_current_user)):
     items = []
     for a in ASSESSMENTS:
         p = prog.get(a["id"])
+        state = lock_state(a, prog, user)
         items.append({
             "id": a["id"], "title": a["title"], "subtitle": a["subtitle"], "description": a["description"],
+            "kind": a["kind"], "tier": a["tier"], "chapter": a["chapter"],
             "question_count": len(a["questions"]),
             "answered_count": len(p.answers) if p else 0,
             "status": p.status if p else "not_started",
-            "unlocked": is_unlocked(a["id"], prog),
+            "unlocked": state is None, "lock": state,
             "score": p.score if p else None, "max_score": p.max_score if p else None,
             "designation": p.designation if p else None,
         })
-    return {"assessments": items, "master_unlocked": all(i["status"] == "completed" for i in items)}
+    return {"assessments": items, "has_access": has_access(user),
+            "master_unlocked": has_access(user) and done(prog, FINAL_ASSESSMENT_ID)}
 
 
 @api.get("/assessments/{aid}")
 async def get_one(aid: int, user: User = Depends(get_current_user)):
     a = get_assessment(aid)
     prog = await user_progress(user.id)
-    if not is_unlocked(aid, prog):
-        raise HTTPException(403, "Complete the previous assessment first")
+    guard(a, prog, user)
     p = prog.get(aid)
+    video_required = a["kind"] == "final" and not user.final_video_watched
     return {
         "id": a["id"], "title": a["title"], "subtitle": a["subtitle"], "description": a["description"],
-        "questions": [{"id": q["id"], "text": q["text"], "section": q["section"]} for q in a["questions"]],
+        "kind": a["kind"], "chapter": a["chapter"], "video_required": video_required,
+        "questions": [] if video_required else [{"id": q["id"], "text": q["text"], "section": q["section"]} for q in a["questions"]],
         "sections": SECTIONS if a["has_sections"] else [],
         "answers": p.answers if p else {}, "status": p.status if p else "not_started",
     }
@@ -390,8 +619,9 @@ async def get_one(aid: int, user: User = Depends(get_current_user)):
 async def save_progress(aid: int, body: AnswersIn, user: User = Depends(get_current_user)):
     a = get_assessment(aid)
     prog = await user_progress(user.id)
-    if not is_unlocked(aid, prog):
-        raise HTTPException(403, "Complete the previous assessment first")
+    guard(a, prog, user)
+    if a["kind"] == "final" and not user.final_video_watched:
+        raise HTTPException(403, "Watch the pastor's video first")
     if aid in prog and prog[aid].status == "completed":
         raise HTTPException(400, "Assessment already completed")
     answers = clean_answers(a, body.answers)
@@ -408,8 +638,9 @@ async def save_progress(aid: int, body: AnswersIn, user: User = Depends(get_curr
 async def submit(aid: int, body: AnswersIn, background: BackgroundTasks, user: User = Depends(get_current_user)):
     a = get_assessment(aid)
     prog = await user_progress(user.id)
-    if not is_unlocked(aid, prog):
-        raise HTTPException(403, "Complete the previous assessment first")
+    guard(a, prog, user)
+    if a["kind"] == "final" and not user.final_video_watched:
+        raise HTTPException(403, "Watch the pastor's video first")
     if aid in prog and prog[aid].status == "completed":
         raise HTTPException(400, "Assessment already completed")
     answers = clean_answers(a, body.answers)
@@ -417,7 +648,7 @@ async def submit(aid: int, body: AnswersIn, background: BackgroundTasks, user: U
         raise HTTPException(400, "Please answer every question before submitting")
     score = sum(answers.values())
     max_score = len(a["questions"]) * SCALE_MAX
-    band = tier(a["total_tiers"], score)
+    band = tier(a["total_tiers"], score) if a["total_tiers"] else {"label": None, "meaning": None}
     section_scores: Dict[str, int] = {}
     for q in a["questions"]:
         if q["section"]:
@@ -428,8 +659,7 @@ async def submit(aid: int, body: AnswersIn, background: BackgroundTasks, user: U
                  section_scores=section_scores, completed_at=now_iso(), updated_at=now_iso())
     await touch(user.id)
     await db.progress.update_one({"user_id": user.id, "assessment_id": aid}, {"$set": p.to_mongo()}, upsert=True)
-    completed = {k for k, v in prog.items() if v.status == "completed"} | {aid}
-    if aid == FINAL_ASSESSMENT_ID and len(completed) == len(ASSESSMENTS):
+    if aid == FINAL_ASSESSMENT_ID:
         background.add_task(send_completion_email, user.email, user.name, score, max_score)
     return result_payload(a, p)
 
@@ -461,7 +691,9 @@ async def scorecard(background: BackgroundTasks, user: User = Depends(get_curren
 
 async def compute_master(user: User):
     prog = await user_progress(user.id)
-    if not all(a["id"] in prog and prog[a["id"]].status == "completed" for a in ASSESSMENTS):
+    if not has_access(user):
+        raise HTTPException(402, "Unlock the Full Training Program to see Master Results")
+    if not done(prog, FINAL_ASSESSMENT_ID):
         raise HTTPException(403, "Complete all 7 assessments to unlock Master Results")
     base, final = prog[BASELINE_ASSESSMENT_ID], prog[FINAL_ASSESSMENT_ID]
     rows = []
@@ -473,7 +705,11 @@ async def compute_master(user: User):
     total = {"day1": sum(r["day1"] for r in rows), "today": sum(r["today"] for r in rows)}
     total["change"] = total["today"] - total["day1"]
     total["max"] = sum(r["max"] for r in rows)
-    return {"rows": rows, "total": total}
+    chapters = [{"chapter": c, "score": prog[CHAPTER_BASE + c].score if done(prog, CHAPTER_BASE + c) else None,
+                 "max": len(ASSESS_BY_ID[CHAPTER_BASE + c]["questions"]) * SCALE_MAX} for c in range(1, 18)]
+    reviews = [{"title": ASSESS_BY_ID[s]["title"], "chapters": ASSESS_BY_ID[s]["subtitle"], "score": prog[s].score,
+                "max": prog[s].max_score, "designation": prog[s].designation} for s in SECTION_CHAPTERS]
+    return {"rows": rows, "total": total, "chapters": chapters, "reviews": reviews}
 
 
 async def run_day2_reminders():
@@ -559,6 +795,8 @@ async def startup():
     await db.progress.create_index([("user_id", 1), ("assessment_id", 1)], unique=True)
     for a in ASSESSMENTS:
         await db.assessments.replace_one({"_id": a["id"]}, {"_id": a["id"], **{k: v for k, v in a.items() if k != "id"}}, upsert=True)
+    for code, pct in DEFAULT_CODES:
+        await db.discount_codes.update_one({"_id": norm_code(code)}, {"$setOnInsert": {"code": code, "percent_off": pct, "active": True, "uses": 0, "created_at": now_iso()}}, upsert=True)
 
 
 @app.on_event("shutdown")

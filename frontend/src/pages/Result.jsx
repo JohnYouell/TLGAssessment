@@ -46,7 +46,6 @@ export default function Result() {
     );
   }
   if (!res) return <Loader />;
-  const next = Number(id) + 1;
   const pct = Math.round((res.score / res.max_score) * 100);
 
   return (
@@ -77,9 +76,9 @@ export default function Result() {
       {res.sections.length > 0 && <SectionBreakdown sections={res.sections} />}
 
       <div className="mt-12">
-        {next <= 7 ? (
-          <Link to={`/assessment/${next}`} className="btn-gold" data-testid="result-next-button">
-            Start Rep {next} <ArrowRight className="h-4 w-4" />
+        {res.kind !== "final" ? (
+          <Link to="/dashboard" className="btn-gold" data-testid="result-next-button">
+            Continue Training <ArrowRight className="h-4 w-4" />
           </Link>
         ) : (
           <Link to="/master-results" className="btn-gold" data-testid="result-master-button">

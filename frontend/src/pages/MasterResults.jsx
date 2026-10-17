@@ -6,6 +6,7 @@ import { api } from "@/lib/api";
 import { Loader } from "@/components/Loader";
 import { useAuth } from "@/context/AuthContext";
 import { TrainSomeoneNext } from "@/components/TrainSomeoneNext";
+import { usePaywall } from "@/context/PaywallContext";
 
 const Change = ({ v, testId }) => {
   if (v > 0) return <span data-testid={testId} className="inline-flex items-center gap-1 font-semibold text-green-500"><ArrowUp className="h-4 w-4" />+{v}</span>;
@@ -13,15 +14,36 @@ const Change = ({ v, testId }) => {
   return <span data-testid={testId} className="inline-flex items-center gap-1 text-zinc-500"><Minus className="h-4 w-4" />0</span>;
 };
 
-const Locked = () => (
-  <div className="relative mt-12 border border-line" data-testid="master-locked">
-    <div className="pointer-events-none select-none p-8 opacity-30 blur-sm">
-      {[...Array(6)].map((_, i) => <div key={i} className="mb-4 h-8 bg-white/10" />)}
+const Locked = ({ paywall }) => {
+  const { openPaywall } = usePaywall();
+  return (
+    <div className="relative mt-12 border border-line" data-testid="master-locked">
+      <div className="pointer-events-none select-none p-8 opacity-30 blur-sm">
+        {[...Array(6)].map((_, i) => <div key={i} className="mb-4 h-8 bg-white/10" />)}
+      </div>
+      <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 px-6 text-center">
+        <Lock className="h-10 w-10 text-gold" />
+        <p className="mt-4 font-heading text-2xl uppercase text-white">{paywall ? "Master Results are part of Full Access" : "Finish the Final Assessment to unlock Master Results"}</p>
+        {paywall ? (
+          <button type="button" onClick={openPaywall} className="btn-gold mt-8" data-testid="master-unlock-button">Unlock the Full Training Program</button>
+        ) : (
+          <Link to="/dashboard" className="btn-gold mt-8" data-testid="master-locked-dashboard-button">Back to Training</Link>
+        )}
+      </div>
     </div>
-    <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 px-6 text-center">
-      <Lock className="h-10 w-10 text-gold" />
-      <p className="mt-4 font-heading text-2xl uppercase text-white">Complete all 7 reps to unlock Master Results</p>
-      <Link to="/dashboard" className="btn-gold mt-8" data-testid="master-locked-dashboard-button">Back to Training</Link>
+  );
+};
+
+const ScoreList = ({ title, items, testId }) => (
+  <div className="mt-12" data-testid={testId}>
+    <p className="eyebrow">{title}</p>
+    <div className="mt-4 grid gap-px bg-line sm:grid-cols-2 lg:grid-cols-3">
+      {items.map((it) => (
+        <div key={it.label} className="flex items-center justify-between bg-surface px-5 py-4">
+          <span className="text-sm text-zinc-300">{it.label}</span>
+          <span className="font-heading text-lg text-white">{it.score == null ? "—" : `${it.score} / ${it.max}`}</span>
+        </div>
+      ))}
     </div>
   </div>
 );
@@ -58,7 +80,7 @@ export default function MasterResults() {
   const [locked, setLocked] = useState(false);
 
   useEffect(() => {
-    api.get("/master-results").then((r) => setData(r.data)).catch(() => setLocked(true));
+    api.get("/master-results").then((r) => setData(r.data)).catch((e) => setLocked(e.response?.status === 402 ? "paywall" : "sequence"));
   }, []);
 
   return (
@@ -69,9 +91,11 @@ export default function MasterResults() {
       <p className="eyebrow mt-8">Final Scorecard</p>
       <h1 className="mt-3 font-heading text-4xl font-bold uppercase text-white sm:text-5xl lg:text-6xl">Master Results</h1>
       <p className="mt-4 max-w-2xl text-zinc-400">Your Day 1 baseline compared to Today, across all five sections of the book.</p>
-      {locked ? <Locked /> : !data ? <Loader /> : (
+      {locked ? <Locked paywall={locked === "paywall"} /> : !data ? <Loader /> : (
         <>
           <MasterTable data={data} />
+          <ScoreList title="Section Reviews" testId="master-reviews" items={data.reviews.map((r) => ({ label: `${r.title} (${r.chapters})`, score: r.score, max: r.max }))} />
+          <ScoreList title="Chapter Reviews" testId="master-chapters" items={data.chapters.map((c) => ({ label: `Chapter ${c.chapter}`, score: c.score, max: c.max }))} />
           <div className="mt-10 flex flex-wrap items-center gap-x-8 gap-y-5">
             <DownloadButton />
             <TrainSomeoneNext />

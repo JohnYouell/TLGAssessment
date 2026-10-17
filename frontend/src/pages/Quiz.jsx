@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
@@ -6,6 +6,7 @@ import { api, formatApiError } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { LikertScale } from "@/components/LikertScale";
 import { Loader } from "@/components/Loader";
+import { VideoEmbed } from "@/components/VideoEmbed";
 
 const SectionHeader = ({ s }) => (
   <div className="mb-10 border-l-2 border-gold pl-4 pt-4" data-testid={`quiz-section-header-${s.id}`}>
@@ -13,6 +14,28 @@ const SectionHeader = ({ s }) => (
     <h2 className="mt-1 font-heading text-2xl uppercase text-white">{s.title}</h2>
   </div>
 );
+
+const afterPath = (q, id) => (q.kind === "initial" ? "/congrats/initial" : q.kind === "chapter" ? `/chapter/${q.chapter}` : `/assessment/${id}/result`);
+
+const PastorGate = ({ onDone }) => {
+  const [url, setUrl] = useState(null);
+  useEffect(() => {
+    api.get("/videos").then((r) => setUrl(r.data.videos.pastor_final.url));
+  }, []);
+  const finish = useCallback(async () => {
+    await api.post("/assessments/7/video-watched");
+    onDone();
+  }, [onDone]);
+  if (url === null) return <Loader />;
+  return (
+    <div className="mt-10 space-y-6 text-center" data-testid="pastor-gate">
+      <h2 className="font-accent text-2xl font-bold text-gold">A Word From Your Pastor</h2>
+      <p className="text-zinc-300">Watch this short video before you begin. The questions unlock when it ends.</p>
+      <VideoEmbed url={url} label="Pastor Speaks Here" onEnded={finish} testId="pastor-video" />
+      {!url && <button type="button" onClick={finish} className="btn-gold" data-testid="pastor-continue-button">Continue to Questions</button>}
+    </div>
+  );
+};
 
 export default function Quiz() {
   const { id } = useParams();
@@ -56,7 +79,7 @@ export default function Quiz() {
       await api.post(`/assessments/${id}/submit`, { answers });
       localStorage.removeItem(storageKey);
       toast.success("Rep complete. Well done.");
-      navigate(`/assessment/${id}/result`);
+      navigate(afterPath(quiz, id));
     } catch (e) {
       toast.error(formatApiError(e));
       setBusy(false);
@@ -72,7 +95,15 @@ export default function Quiz() {
     );
   }
   if (!quiz) return <Loader />;
-  if (quiz.status === "completed") return <Navigate to={`/assessment/${id}/result`} replace />;
+  if (quiz.status === "completed") return <Navigate to={afterPath(quiz, id)} replace />;
+  if (quiz.video_required) {
+    return (
+      <div className="mx-auto max-w-4xl px-5 py-12 sm:px-8" data-testid="quiz-page">
+        <h1 className="font-heading text-4xl font-bold uppercase text-white sm:text-5xl">{quiz.title}</h1>
+        <PastorGate onDone={() => window.location.reload()} />
+      </div>
+    );
+  }
 
   const answered = quiz.questions.filter((q) => answers[q.id]).length;
   const total = quiz.questions.length;
