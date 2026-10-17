@@ -58,6 +58,14 @@ export default function Dashboard() {
         {data.assessments.map((a, i) => <AssessmentCard key={a.id} a={a} index={i} />)}
         <MasterTile unlocked={data.master_unlocked} done={done} />
       </div>
+      {user.is_admin && (
+        <div className="mt-12 border-t border-line pt-8" data-testid="admin-tools">
+          <p className="eyebrow">Admin Tools</p>
+          <Link to="/admin/verses" className="text-link mt-3 inline-flex items-center gap-2 font-heading text-sm uppercase tracking-widest" data-testid="admin-verses-link">
+            Edit Scripture Banner <ArrowRight className="h-4 w-4" />
+          </Link>
+        </div>
+      )}
     </div>
   );
 }

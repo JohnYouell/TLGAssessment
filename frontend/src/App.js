@@ -11,16 +11,18 @@ import Dashboard from "@/pages/Dashboard";
 import Quiz from "@/pages/Quiz";
 import Result from "@/pages/Result";
 import MasterResults from "@/pages/MasterResults";
+import AdminVerses from "@/pages/AdminVerses";
+import { Footer } from "@/components/Footer";
 
 const guard = (el) => <ProtectedRoute>{el}</ProtectedRoute>;
 
 function App() {
   return (
-    <div className="App min-h-screen bg-ink text-white">
+    <div className="App flex min-h-screen flex-col bg-ink text-white">
       <BrowserRouter>
         <AuthProvider>
           <Header />
-          <main>
+          <main className="flex-1">
             <Routes>
               <Route path="/" element={<Welcome />} />
               <Route path="/login" element={<Login />} />
@@ -30,9 +32,11 @@ function App() {
               <Route path="/assessment/:id" element={guard(<Quiz />)} />
               <Route path="/assessment/:id/result" element={guard(<Result />)} />
               <Route path="/master-results" element={guard(<MasterResults />)} />
+              <Route path="/admin/verses" element={guard(<AdminVerses />)} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </main>
+          <Footer />
           <Toaster theme="dark" position="top-center" />
         </AuthProvider>
       </BrowserRouter>

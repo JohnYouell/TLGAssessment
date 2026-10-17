@@ -64,7 +64,8 @@ class User(BaseDocument):
     referred_by: Optional[str] = None
 
     def public(self):
-        return {"id": self.id, "name": self.name, "email": self.email, "marketing_opt_in": self.marketing_opt_in}
+        return {"id": self.id, "name": self.name, "email": self.email,
+                "marketing_opt_in": self.marketing_opt_in, "is_admin": is_admin(self)}
 
 
 class Progress(BaseDocument):
@@ -87,6 +88,29 @@ class RegisterIn(BaseModel):
     password: str = Field(min_length=6, max_length=128)
     marketing_opt_in: bool = False
     referred_by: Optional[str] = Field(default=None, max_length=64)
+
+
+class VerseIn(BaseModel):
+    text: str = Field(min_length=1, max_length=300)
+    ref: str = Field(min_length=1, max_length=60)
+    translation: str = Field(default="", max_length=20)
+
+
+class VersesIn(BaseModel):
+    verses: list[VerseIn] = Field(min_length=1, max_length=30)
+
+
+DEFAULT_VERSES = [
+    {"text": t, "ref": r, "translation": "NIV"} for t, r in [
+        ("Rather, train yourself to be godly.", "1 Timothy 4:7"),
+        ("Run in such a way as to get the prize.", "1 Corinthians 9:24"),
+        ("Let us run with perseverance the race marked out for us.", "Hebrews 12:1"),
+        ("I press on toward the goal to win the prize for which God has called me heavenward in Christ Jesus.", "Philippians 3:14"),
+        ("Those who hope in the Lord will renew their strength.", "Isaiah 40:31"),
+        ("Let us not become weary in doing good, for at the proper time we will reap a harvest if we do not give up.", "Galatians 6:9"),
+        ("I have fought the good fight, I have finished the race, I have kept the faith.", "2 Timothy 4:7"),
+    ]
+]
 
 
 class LoginIn(BaseModel):
@@ -194,6 +218,31 @@ async def logout(response: Response):
     for k in ("access_token", "refresh_token"):
         response.delete_cookie(k, path="/", secure=True, samesite="none")
     return {"ok": True}
+
+
+def is_admin(user) -> bool:
+    admins = {e.strip().lower() for e in os.environ["ADMIN_EMAILS"].split(",") if e.strip()}
+    return user.email.lower() in admins
+
+
+async def require_admin(user: "User" = Depends(get_current_user)):
+    if not is_admin(user):
+        raise HTTPException(403, "Admins only")
+    return user
+
+
+@api.get("/verses")
+async def get_verses():
+    doc = await db.settings.find_one({"_id": "verses"})
+    return {"verses": doc["verses"] if doc else DEFAULT_VERSES}
+
+
+@api.put("/admin/verses")
+async def put_verses(body: VersesIn, admin: User = Depends(require_admin)):
+    verses = [v.model_dump() for v in body.verses]
+    await db.settings.update_one({"_id": "verses"}, {"$set": {"verses": verses, "updated_by": admin.email, "updated_at": now_iso()}}, upsert=True)
+    logger.info("Verses updated by %s (%s verses)", admin.email, len(verses))
+    return {"verses": verses}
 
 
 @api.get("/auth/me")
