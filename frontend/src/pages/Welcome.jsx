@@ -39,7 +39,7 @@ export default function Welcome({ firstVisit = false }) {
         </div>
       </section>
       <ScriptureBanner />
-      <section className="mx-auto grid max-w-7xl gap-px bg-line px-0 sm:grid-cols-2 lg:grid-cols-4">
+      <section className="grid w-full gap-px bg-line px-0 sm:grid-cols-2 lg:grid-cols-4">
         {STEPS.map((s) => (
           <div key={s.k} className={`${s.s.box} px-8 py-12`} data-testid={`welcome-step-${s.k}`}>
             <span className={`font-heading text-7xl font-bold leading-none lg:text-8xl ${s.s.num}`}>{s.k}</span>
