@@ -133,6 +133,7 @@ DEFAULT_PAGES = {
         "eyebrow": "About",
         "title": "The Lord's Gym",
         "body": "The Lord's Gym: Discipleship Training, One Rep at a Time treats spiritual growth like training: steady, daily work that builds strength over time. This site is the companion assessment series for the book.\n\nThe series has 7 assessments. You start with the Initial Spiritual Assessment as your Day 1 baseline. Then you work through five section reviews that follow the book's chapters, and you finish with the Spiritual Progress Assessment. Your Master Results compare Day 1 to Today across all five sections, so you can see how far you've come.\n\n[Placeholder: author bio, ministry background and where to buy the book]",
+        "photo_url": "/author-photo.jpg",
     },
     "contact": {
         "eyebrow": "Contact",
@@ -147,7 +148,7 @@ class PageIn(BaseModel):
     eyebrow: str = Field(default="", max_length=40)
     title: str = Field(min_length=1, max_length=80)
     body: str = Field(min_length=1, max_length=8000)
-    photo_url: str = Field(default="", max_length=500, pattern=r"^(https://\S+)?$")
+    photo_url: str = Field(default="", max_length=500, pattern=r"^(https://\S+|/[\w./-]+)?$")
 
 
 class LoginIn(BaseModel):
