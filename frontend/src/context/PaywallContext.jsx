@@ -20,7 +20,7 @@ const PaywallBody = ({ onDone }) => {
     try {
       const { data } = await api.post("/payments/quote", { code });
       setQuote(data);
-      toast.success(`Code applied: ${data.percent_off}% off`);
+      toast.success(`Code applied: ${data.amount_off > 0 ? `$${data.amount_off.toFixed(2)}` : `${data.percent_off}%`} off`);
     } catch (e) {
       setQuote(null);
       toast.error(formatApiError(e));
@@ -51,7 +51,7 @@ const PaywallBody = ({ onDone }) => {
         {FEATURES.map((f) => <li key={f} className="flex items-center gap-2"><Check className="h-4 w-4 text-gold" />{f}</li>)}
       </ul>
       <div className="flex items-end gap-3" data-testid="paywall-price">
-        {quote && quote.percent_off > 0 && <span className="font-heading text-2xl text-zinc-500 line-through">$25.00</span>}
+        {quote && quote.total < quote.price && <span className="font-heading text-2xl text-zinc-500 line-through">$25.00</span>}
         <span className="font-heading text-5xl font-bold text-white">${total.toFixed(2)}</span>
         <span className="pb-1 text-xs uppercase tracking-widest text-zinc-400">one-time</span>
       </div>

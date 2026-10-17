@@ -18,7 +18,7 @@ import jwt
 from bson import ObjectId
 from fastapi import FastAPI, APIRouter, HTTPException, Request, Response, Depends, BackgroundTasks
 from motor.motor_asyncio import AsyncIOMotorClient
-from pydantic import BaseModel, BeforeValidator, ConfigDict, EmailStr, Field
+from pydantic import BaseModel, BeforeValidator, ConfigDict, EmailStr, Field, model_validator
 from starlette.middleware.cors import CORSMiddleware
 
 from assessments_config import (
@@ -464,7 +464,7 @@ async def put_page(slug: str, body: PageIn, admin: User = Depends(require_admin)
 stripe.api_key = os.environ["STRIPE_SECRET_KEY"]
 PACKAGE_PRICE = 25.00
 PACKAGE_LOOKUP_KEY = "tlg_full_access_40"
-DEFAULT_CODES = [("BetaTeam", 100), ("EarlyAdopters", 50), ("SeniorLeader", 75), ("GymStaff", 80)]
+DEFAULT_CODES = [("BetaTeam", 100, 0), ("EarlyAdopters", 50, 0), ("SeniorLeader", 75, 0), ("GymStaff", 80, 0), ("OnToTheFloor", 0, 10.0)]
 
 
 def norm_code(code):
@@ -474,8 +474,18 @@ def norm_code(code):
 class CodeIn(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True)
     code: str = Field(min_length=2, max_length=40)
-    percent_off: int = Field(ge=1, le=100)
+    percent_off: int = Field(default=0, ge=0, le=100)
+    amount_off: float = Field(default=0, ge=0, le=1000)
     active: bool = True
+
+    @model_validator(mode="after")
+    def one_discount(self):
+        if (self.percent_off > 0) == (self.amount_off > 0):
+            raise ValueError("Set either a percent off or a dollar amount off")
+        if self.amount_off > PACKAGE_PRICE:
+            raise ValueError(f"Dollar amount can't be more than the ${PACKAGE_PRICE:.2f} price")
+        self.amount_off = round(self.amount_off, 2)
+        return self
 
 
 class CheckoutIn(BaseModel):
@@ -484,7 +494,8 @@ class CheckoutIn(BaseModel):
 
 
 def code_out(d):
-    return {"id": d["_id"], "code": d["code"], "percent_off": d["percent_off"], "active": d["active"], "uses": d.get("uses", 0)}
+    return {"id": d["_id"], "code": d["code"], "percent_off": d["percent_off"], "amount_off": d.get("amount_off", 0),
+            "active": d["active"], "uses": d.get("uses", 0)}
 
 
 async def find_code(code):
@@ -497,7 +508,9 @@ async def find_code(code):
 
 
 def price_after(d):
-    return round(PACKAGE_PRICE * (100 - (d["percent_off"] if d else 0)) / 100, 2)
+    if not d:
+        return PACKAGE_PRICE
+    return max(0.0, round(PACKAGE_PRICE * (100 - d["percent_off"]) / 100 - d.get("amount_off", 0), 2))
 
 
 async def grant_access(user_id, source):
@@ -521,7 +534,7 @@ async def create_code(body: CodeIn, admin: User = Depends(require_admin)):
 
 @api.put("/admin/codes/{code_id}")
 async def update_code(code_id: str, body: CodeIn, admin: User = Depends(require_admin)):
-    res = await db.discount_codes.update_one({"_id": code_id}, {"$set": {"percent_off": body.percent_off, "active": body.active}})
+    res = await db.discount_codes.update_one({"_id": code_id}, {"$set": {"percent_off": body.percent_off, "amount_off": body.amount_off, "active": body.active}})
     if not res.matched_count:
         raise HTTPException(404, "Code not found")
     return code_out(await db.discount_codes.find_one({"_id": code_id}))
@@ -536,7 +549,7 @@ async def delete_code(code_id: str, admin: User = Depends(require_admin)):
 @api.post("/payments/quote")
 async def quote(body: CheckoutIn, user: User = Depends(get_current_user)):
     d = await find_code(body.code)
-    return {"price": PACKAGE_PRICE, "percent_off": d["percent_off"] if d else 0, "total": price_after(d)}
+    return {"price": PACKAGE_PRICE, "percent_off": d["percent_off"] if d else 0, "amount_off": d.get("amount_off", 0) if d else 0, "total": price_after(d)}
 
 
 @api.post("/payments/checkout")
@@ -1017,8 +1030,8 @@ async def startup():
     await db.assessments.delete_many({"_id": {"$nin": list(ASSESS_BY_ID)}})
     for a in ASSESSMENTS:
         await db.assessments.replace_one({"_id": a["id"]}, {"_id": a["id"], **{k: v for k, v in a.items() if k != "id"}}, upsert=True)
-    for code, pct in DEFAULT_CODES:
-        await db.discount_codes.update_one({"_id": norm_code(code)}, {"$setOnInsert": {"code": code, "percent_off": pct, "active": True, "uses": 0, "created_at": now_iso()}}, upsert=True)
+    for code, pct, amt in DEFAULT_CODES:
+        await db.discount_codes.update_one({"_id": norm_code(code)}, {"$setOnInsert": {"code": code, "percent_off": pct, "amount_off": amt, "active": True, "uses": 0, "created_at": now_iso()}}, upsert=True)
 
 
 @app.on_event("shutdown")
