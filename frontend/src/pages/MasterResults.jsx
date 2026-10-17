@@ -95,7 +95,6 @@ export default function MasterResults() {
         <>
           <MasterTable data={data} />
           <ScoreList title="Section Reviews" testId="master-reviews" items={data.reviews.map((r) => ({ label: `${r.title} (${r.chapters})`, score: r.score, max: r.max }))} />
-          <ScoreList title="Chapter Reviews" testId="master-chapters" items={data.chapters.map((c) => ({ label: `Chapter ${c.chapter}`, score: c.score, max: c.max }))} />
           <div className="mt-10 flex flex-wrap items-center gap-x-8 gap-y-5">
             <DownloadButton />
             <TrainSomeoneNext />

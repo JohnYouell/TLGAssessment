@@ -11,7 +11,7 @@ const LABELS = {
   registration_thanks: "Thank-you page after registration",
   initial_congrats: "Congratulations page after the Initial Assessment",
   pastor_final: "Final Assessment: Pastor Speaks Here (must be watched to unlock questions)",
-  ...Object.fromEntries(Array.from({ length: 17 }, (_, i) => [`chapter_${i + 1}`, `Chapter ${i + 1} wrap-up & next-chapter preview`])),
+  ...Object.fromEntries([1, 2, 3, 4, 5].map((n) => [`section_${n + 1}`, `Section ${n} Review wrap-up (shown after the review)`])),
 };
 
 export default function AdminVideos() {

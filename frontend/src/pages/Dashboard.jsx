@@ -69,7 +69,7 @@ export default function Dashboard() {
 
       <section className="mt-12" data-testid="tier-free">
         <p className="eyebrow">Actively Training · Free</p>
-        <h2 className="mt-2 font-accent text-2xl font-bold text-white">Initial Assessment & Chapter Reviews</h2>
+        <h2 className="mt-2 font-accent text-2xl font-bold text-white">Initial Spiritual Assessment</h2>
         <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {free.map((a, i) => <AssessmentCard key={a.id} a={a} index={i} />)}
         </div>
@@ -85,7 +85,7 @@ export default function Dashboard() {
         </div>
         <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {paid.map((a, i) => <AssessmentCard key={a.id} a={a} index={i} />)}
-          <Tile icon={PlayCircle} title="Training Videos" text="Every chapter wrap-up video in one place." to="/videos" cta="Watch" locked={locked} onLocked={openPaywall} testId="videos-tile" />
+          <Tile icon={PlayCircle} title="Training Videos" text="Every section wrap-up video in one place." to="/videos" cta="Watch" locked={locked} onLocked={openPaywall} testId="videos-tile" />
           <Tile icon={Trophy} title="Master Results" text={data.master_unlocked ? "Your full growth profile is ready." : "Unlocks when you finish the Final Assessment."} to="/master-results" cta={data.master_unlocked ? "View" : "Preview"} locked={locked} onLocked={openPaywall} testId="master-results-tile" />
         </div>
       </section>

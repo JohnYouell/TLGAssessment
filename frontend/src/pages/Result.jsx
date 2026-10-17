@@ -4,6 +4,7 @@ import { ArrowRight, ArrowLeft } from "lucide-react";
 import { motion } from "framer-motion";
 import { api, formatApiError } from "@/lib/api";
 import { Loader } from "@/components/Loader";
+import { SectionVideo } from "@/pages/VideoPages";
 
 const SectionBreakdown = ({ sections }) => (
   <div className="mt-12" data-testid="result-sections">
@@ -74,6 +75,7 @@ export default function Result() {
       </div>
 
       {res.sections.length > 0 && <SectionBreakdown sections={res.sections} />}
+      {res.kind === "section" && <SectionVideo aid={res.assessment_id} />}
 
       <div className="mt-12">
         {res.kind !== "final" ? (

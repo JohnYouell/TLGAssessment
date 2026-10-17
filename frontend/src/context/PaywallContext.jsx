@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/compone
 import { Input } from "@/components/ui/input";
 
 const PaywallContext = createContext(null);
-const FEATURES = ["Section 1–5 Reviews (out of 75 each)", "Post-chapter video responses", "Final Assessment & Pastoral Briefing", "Master Results & growth profile", "Training videos library"];
+const FEATURES = ["Section 1–5 Reviews (out of 75 each)", "Section review wrap-up videos", "Final Assessment & Pastoral Briefing", "Master Results & growth profile", "Training videos library"];
 
 const PaywallBody = ({ onDone }) => {
   const { reload } = useAuth();

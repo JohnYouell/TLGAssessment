@@ -19,7 +19,7 @@ from starlette.middleware.cors import CORSMiddleware
 
 from assessments_config import (
     ASSESSMENTS, SECTIONS, SCALE_MAX, BASELINE_ASSESSMENT_ID, FINAL_ASSESSMENT_ID, TOTAL_125_TIERS,
-    SECTION_CHAPTERS, CHAPTER_BASE,
+    SECTION_REVIEW_IDS,
 )
 import stripe
 from scorecard import build_scorecard_pdf
@@ -451,8 +451,8 @@ async def stripe_webhook(request: Request):
     return {"status": "ok"}
 
 
-VIDEO_KEYS = ["registration_thanks", "initial_congrats", "pastor_final"] + [f"chapter_{n}" for n in range(1, 18)]
-PAID_VIDEO_KEYS = {"pastor_final"} | {f"chapter_{n}" for n in range(1, 18)}
+VIDEO_KEYS = ["registration_thanks", "initial_congrats", "pastor_final"] + [f"section_{s}" for s in SECTION_REVIEW_IDS]
+PAID_VIDEO_KEYS = {"pastor_final"} | {f"section_{s}" for s in SECTION_REVIEW_IDS}
 
 
 class VideoIn(BaseModel):
@@ -530,15 +530,7 @@ def has_access(user):
 def lock_state(a, prog, user):
     if a["tier"] == "paid" and not has_access(user):
         return "paywall"
-    kind, aid = a["kind"], a["id"]
-    if kind == "chapter":
-        ok = done(prog, 1) and (a["chapter"] == 1 or done(prog, aid - 1))
-    elif kind == "section":
-        ok = all(done(prog, CHAPTER_BASE + c) for c in SECTION_CHAPTERS[aid])
-    elif kind == "final":
-        ok = all(done(prog, s) for s in SECTION_CHAPTERS)
-    else:
-        ok = True
+    ok = a["kind"] != "final" or all(done(prog, s) for s in SECTION_REVIEW_IDS)
     return None if ok else "sequence"
 
 
@@ -579,7 +571,7 @@ def result_payload(a, p: Progress):
             sections.append({**s, "score": score, "max": section_max(a["id"], s["id"]),
                              "designation": t["label"], "meaning": t["meaning"]})
     return {
-        "assessment_id": a["id"], "title": a["title"], "subtitle": a["subtitle"], "kind": a["kind"], "chapter": a["chapter"],
+        "assessment_id": a["id"], "title": a["title"], "subtitle": a["subtitle"], "kind": a["kind"],
         "score": p.score, "max_score": p.max_score, "designation": p.designation,
         "meaning": p.meaning, "completed_at": p.completed_at, "sections": sections,
     }
@@ -594,7 +586,7 @@ async def list_assessments(user: User = Depends(get_current_user)):
         state = lock_state(a, prog, user)
         items.append({
             "id": a["id"], "title": a["title"], "subtitle": a["subtitle"], "description": a["description"],
-            "kind": a["kind"], "tier": a["tier"], "chapter": a["chapter"],
+            "kind": a["kind"], "tier": a["tier"],
             "question_count": len(a["questions"]),
             "answered_count": len(p.answers) if p else 0,
             "status": p.status if p else "not_started",
@@ -615,7 +607,7 @@ async def get_one(aid: int, user: User = Depends(get_current_user)):
     video_required = a["kind"] == "final" and not user.final_video_watched
     return {
         "id": a["id"], "title": a["title"], "subtitle": a["subtitle"], "description": a["description"],
-        "kind": a["kind"], "chapter": a["chapter"], "video_required": video_required,
+        "kind": a["kind"], "video_required": video_required,
         "questions": [] if video_required else [{"id": q["id"], "text": q["text"], "section": q["section"]} for q in a["questions"]],
         "sections": SECTIONS if a["has_sections"] else [],
         "answers": p.answers if p else {}, "status": p.status if p else "not_started",
@@ -712,11 +704,9 @@ async def compute_master(user: User):
     total = {"day1": sum(r["day1"] for r in rows), "today": sum(r["today"] for r in rows)}
     total["change"] = total["today"] - total["day1"]
     total["max"] = sum(r["max"] for r in rows)
-    chapters = [{"chapter": c, "score": prog[CHAPTER_BASE + c].score if done(prog, CHAPTER_BASE + c) else None,
-                 "max": len(ASSESS_BY_ID[CHAPTER_BASE + c]["questions"]) * SCALE_MAX} for c in range(1, 18)]
     reviews = [{"title": ASSESS_BY_ID[s]["title"], "chapters": ASSESS_BY_ID[s]["subtitle"], "score": prog[s].score,
-                "max": prog[s].max_score, "designation": prog[s].designation} for s in SECTION_CHAPTERS]
-    return {"rows": rows, "total": total, "chapters": chapters, "reviews": reviews}
+                "max": prog[s].max_score, "designation": prog[s].designation} for s in SECTION_REVIEW_IDS]
+    return {"rows": rows, "total": total, "reviews": reviews}
 
 
 async def run_day2_reminders():
@@ -800,6 +790,7 @@ async def startup():
     await db.users.create_index("email", unique=True)
     await db.login_attempts.create_index("identifier")
     await db.progress.create_index([("user_id", 1), ("assessment_id", 1)], unique=True)
+    await db.assessments.delete_many({"_id": {"$nin": list(ASSESS_BY_ID)}})
     for a in ASSESSMENTS:
         await db.assessments.replace_one({"_id": a["id"]}, {"_id": a["id"], **{k: v for k, v in a.items() if k != "id"}}, upsert=True)
     for code, pct in DEFAULT_CODES:

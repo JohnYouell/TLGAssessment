@@ -15,7 +15,7 @@ const SectionHeader = ({ s }) => (
   </div>
 );
 
-const afterPath = (q, id) => (q.kind === "initial" ? "/congrats/initial" : q.kind === "chapter" ? `/chapter/${q.chapter}` : `/assessment/${id}/result`);
+const afterPath = (q, id) => (q.kind === "initial" ? "/congrats/initial" : `/assessment/${id}/result`);
 
 const PastorGate = ({ onDone }) => {
   const [url, setUrl] = useState(null);

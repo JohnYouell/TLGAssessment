@@ -198,21 +198,8 @@ ASSESSMENTS = [
 BASELINE_ASSESSMENT_ID = 1
 FINAL_ASSESSMENT_ID = 7
 
-SECTION_CHAPTERS = {2: range(1, 4), 3: range(4, 8), 4: range(8, 11), 5: range(11, 15), 6: range(15, 18)}
-CHAPTER_BASE = 100
+SECTION_REVIEW_IDS = list(REVIEW_META)
 
 for _a in ASSESSMENTS:
     _a["kind"] = {1: "initial", 7: "final"}.get(_a["id"], "section")
     _a["tier"] = "free" if _a["id"] == 1 else "paid"
-    _a["chapter"] = None
-
-ASSESSMENTS += [
-    {
-        "id": CHAPTER_BASE + n, "title": f"Chapter {n} Review", "subtitle": f"Chapter {n}",
-        "description": f"Quick review questions for Chapter {n}.",
-        "questions": [{"id": f"c{n}q{q}", "text": f"Placeholder review question {q} for Chapter {n}.", "section": None} for q in range(1, 4)],
-        "has_sections": False, "total_tiers": None, "section_tiers": None,
-        "kind": "chapter", "tier": "free", "chapter": n,
-    }
-    for n in range(1, 18)
-]

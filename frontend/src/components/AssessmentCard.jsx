@@ -12,8 +12,7 @@ const ctaLabel = (a) => {
 
 export const AssessmentCard = ({ a, index }) => {
   const { openPaywall } = usePaywall();
-  const resultPath = a.kind === "chapter" ? `/chapter/${a.chapter}` : `/assessment/${a.id}/result`;
-  const to = a.status === "completed" ? resultPath : `/assessment/${a.id}`;
+  const to = a.status === "completed" ? `/assessment/${a.id}/result` : `/assessment/${a.id}`;
   const pct = a.question_count ? Math.round((a.answered_count / a.question_count) * 100) : 0;
   return (
     <motion.div
@@ -24,7 +23,7 @@ export const AssessmentCard = ({ a, index }) => {
       className={`group relative flex flex-col justify-between border border-line bg-surface p-6 transition-colors duration-150 ${a.unlocked || a.lock === "paywall" ? "hover:border-gold" : "opacity-50"}`}
     >
       <div className="flex items-start justify-between gap-4">
-        <span className="font-heading text-6xl font-bold leading-none text-white/10 group-hover:text-gold/30">{a.kind === "chapter" ? `C${a.chapter}` : String(a.id).padStart(2, "0")}</span>
+        <span className="font-heading text-6xl font-bold leading-none text-white/10 group-hover:text-gold/30">{String(a.id).padStart(2, "0")}</span>
         {a.lock === "paywall" ? <Lock className="h-6 w-6 text-gold" data-testid={`assessment-padlock-${a.id}`} /> : <StatusBadge status={a.status} testId={`assessment-status-${a.id}`} />}
       </div>
       <div className="mt-6">

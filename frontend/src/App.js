@@ -19,7 +19,7 @@ import Contact from "@/pages/Contact";
 import { Footer } from "@/components/Footer";
 import { PaywallProvider } from "@/context/PaywallContext";
 import { PaymentSuccess, PaymentCancel } from "@/pages/Payment";
-import { ThankYou, InitialCongrats, ChapterComplete, SpreadTheWord, TrainingVideos } from "@/pages/VideoPages";
+import { ThankYou, InitialCongrats, SpreadTheWord, TrainingVideos } from "@/pages/VideoPages";
 import AdminCodes from "@/pages/AdminCodes";
 import AdminVideos from "@/pages/AdminVideos";
 
@@ -48,7 +48,6 @@ function App() {
               <Route path="/register" element={<Register />} />
               <Route path="/welcome" element={guard(<ThankYou />)} />
               <Route path="/congrats/initial" element={guard(<InitialCongrats />)} />
-              <Route path="/chapter/:n" element={guard(<ChapterComplete />)} />
               <Route path="/spread-the-word" element={<SpreadTheWord />} />
               <Route path="/videos" element={guard(<TrainingVideos />)} />
               <Route path="/payment/success" element={guard(<PaymentSuccess />)} />

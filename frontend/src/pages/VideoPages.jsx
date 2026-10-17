@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { ArrowRight, Megaphone, Users } from "lucide-react";
 import { api } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
@@ -36,6 +36,18 @@ export function ThankYou() {
   );
 }
 
+export const ShareActions = ({ hasAccess }) => {
+  const { openPaywall } = usePaywall();
+  return (
+    <div className="flex flex-wrap justify-center gap-4">
+      <Link to="/spread-the-word" className="inline-flex items-center gap-2 rounded-sm border-2 border-gold px-7 py-3 font-heading text-sm uppercase tracking-[0.18em] text-gold transition-colors duration-150 hover:bg-gold hover:text-black" data-testid="spread-the-word-button">
+        <Megaphone className="h-4 w-4" /> Spread the Word
+      </Link>
+      {!hasAccess && <button type="button" onClick={openPaywall} className="btn-gold" data-testid="join-conversation-button"><Users className="h-4 w-4" /> Join the Conversation</button>}
+    </div>
+  );
+};
+
 export function InitialCongrats() {
   const v = useVideoData();
   if (!v) return <Loader />;
@@ -46,37 +58,21 @@ export function InitialCongrats() {
         <Link to="/assessment/1/result" className="btn-gold" data-testid="initial-congrats-result-button">See My Results <ArrowRight className="h-4 w-4" /></Link>
         <Link to="/dashboard" className="text-link self-center" data-testid="initial-congrats-dashboard-link">Go to Dashboard</Link>
       </div>
+      <ShareActions hasAccess={v.has_access} />
     </Shell>
   );
 }
 
-export function ChapterComplete() {
-  const { n } = useParams();
+export function SectionVideo({ aid }) {
   const v = useVideoData();
-  const { openPaywall } = usePaywall();
-  const [res, setRes] = useState(null);
-
-  useEffect(() => {
-    api.get(`/assessments/${100 + Number(n)}/result`).then((r) => setRes(r.data)).catch(() => {});
-  }, [n]);
-
-  if (!v) return <Loader />;
-  const vid = v.videos[`chapter_${n}`];
+  if (!v) return null;
+  const vid = v.videos[`section_${aid}`];
   return (
-    <Shell eyebrow={`Chapter ${n} Review Complete${res ? ` · ${res.score}/${res.max_score}` : ""}`} title={vid.title || `Chapter ${n} Wrap-Up & What's Next`} testId="chapter-complete-page">
-      <VideoEmbed url={vid.url} label={`Chapter ${n} video placeholder`} locked={!v.has_access} onUnlock={openPaywall} testId="chapter-video" />
-      <div className="flex flex-wrap justify-center gap-4">
-        <Link to="/spread-the-word" className="inline-flex items-center gap-2 rounded-sm border-2 border-gold px-7 py-3 font-heading text-sm uppercase tracking-[0.18em] text-gold transition-colors duration-150 hover:bg-gold hover:text-black" data-testid="spread-the-word-button">
-          <Megaphone className="h-4 w-4" /> Spread the Word
-        </Link>
-        {v.has_access ? (
-          <Link to="/dashboard" className="btn-gold" data-testid="chapter-next-button">Next Rep <ArrowRight className="h-4 w-4" /></Link>
-        ) : (
-          <button type="button" onClick={openPaywall} className="btn-gold" data-testid="join-conversation-button"><Users className="h-4 w-4" /> Join the Conversation</button>
-        )}
-      </div>
-      {!v.has_access && <Link to="/dashboard" className="text-link inline-block text-sm" data-testid="chapter-dashboard-link">Back to Dashboard</Link>}
-    </Shell>
+    <div className="mt-12 space-y-6" data-testid="section-video-block">
+      <p className="eyebrow">{vid.title || "Section Wrap-Up & What's Next"}</p>
+      <VideoEmbed url={vid.url} label="Section review video placeholder" testId="section-video" />
+      <ShareActions hasAccess={v.has_access} />
+    </div>
   );
 }
 
@@ -103,10 +99,10 @@ export function TrainingVideos() {
       <p className="eyebrow">All-Access</p>
       <h1 className="mt-3 font-heading text-4xl font-bold uppercase text-white sm:text-5xl">Training Videos</h1>
       <div className="mt-10 grid gap-8 md:grid-cols-2">
-        {Array.from({ length: 17 }, (_, i) => i + 1).map((n) => (
+        {[1, 2, 3, 4, 5].map((n) => (
           <div key={n} className="space-y-3" data-testid={`training-video-${n}`}>
-            <p className="font-heading uppercase tracking-wide text-white">{v.videos[`chapter_${n}`].title || `Chapter ${n} Wrap-Up`}</p>
-            <VideoEmbed url={v.videos[`chapter_${n}`].url} label={`Chapter ${n} video placeholder`} locked={!v.has_access} onUnlock={openPaywall} testId={`training-video-${n}-player`} />
+            <p className="font-heading uppercase tracking-wide text-white">{v.videos[`section_${n + 1}`].title || `Section ${n} Review Wrap-Up`}</p>
+            <VideoEmbed url={v.videos[`section_${n + 1}`].url} label={`Section ${n} video placeholder`} locked={!v.has_access} onUnlock={openPaywall} testId={`training-video-${n}-player`} />
           </div>
         ))}
       </div>
