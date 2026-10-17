@@ -15,6 +15,7 @@ import MasterResults from "@/pages/MasterResults";
 import AdminVerses from "@/pages/AdminVerses";
 import AdminSharing from "@/pages/AdminSharing";
 import BookPage from "@/pages/BookPage";
+import AdminEndorsements from "@/pages/AdminEndorsements";
 import AdminPage from "@/pages/AdminPage";
 import About from "@/pages/About";
 import Contact from "@/pages/Contact";
@@ -66,6 +67,7 @@ function App() {
               <Route path="/admin/pages/:slug" element={guard(<AdminPage />)} />
               <Route path="/admin/verses" element={guard(<AdminVerses />)} />
               <Route path="/admin/sharing" element={guard(<AdminSharing />)} />
+              <Route path="/admin/endorsements" element={guard(<AdminEndorsements />)} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </main>

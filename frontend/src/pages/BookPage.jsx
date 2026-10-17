@@ -1,14 +1,22 @@
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { ArrowRight, BookOpen } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useSharing } from "@/lib/useSharing";
 import { Loader } from "@/components/Loader";
+import { api } from "@/lib/api";
+import { Endorsements } from "@/components/Endorsements";
 
 export default function BookPage() {
   const s = useSharing();
+  const [endo, setEndo] = useState(null);
+  useEffect(() => {
+    api.get("/endorsements").then((r) => setEndo(r.data)).catch(() => {});
+  }, []);
   if (!s) return <Loader />;
   return (
-    <div className="mx-auto grid max-w-6xl items-center gap-12 px-5 py-16 sm:px-8 md:grid-cols-12 lg:py-24" data-testid="book-page">
+    <div className="mx-auto max-w-6xl px-5 py-16 sm:px-8 lg:py-24" data-testid="book-page">
+    <div className="grid items-center gap-12 md:grid-cols-12">
       <motion.img initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
         src="/book-3d.webp" alt="The Lord's Gym book by John Youell, Jr." className="mx-auto w-60 sm:w-80 md:col-span-5 lg:w-96" data-testid="book-cover" />
       <div className="md:col-span-7">
@@ -27,6 +35,8 @@ export default function BookPage() {
           <Link to="/register" className="text-link inline-flex items-center gap-2" data-testid="book-join-link">Start the assessments <ArrowRight className="h-4 w-4" /></Link>
         </div>
       </div>
+    </div>
+      {endo?.items.length > 0 && <Endorsements layout={endo.layout} items={endo.items} />}
     </div>
   );
 }

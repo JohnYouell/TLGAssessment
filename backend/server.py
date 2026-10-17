@@ -302,6 +302,34 @@ async def put_sharing(body: SharingIn, admin: User = Depends(require_admin)):
 
 
 
+class EndorsementIn(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True)
+    text: str = Field(min_length=1, max_length=1200)
+    name: str = Field(min_length=1, max_length=100)
+    position: str = Field(default="", max_length=150)
+    books: list[str] = Field(default_factory=list, max_length=10)
+
+
+class EndorsementsIn(BaseModel):
+    layout: str = Field(pattern=r"^(cards|spotlight|list)$")
+    items: list[EndorsementIn] = Field(default_factory=list, max_length=30)
+
+
+@api.get("/endorsements")
+async def get_endorsements():
+    doc = await db.settings.find_one({"_id": "endorsements"}) or {}
+    return {"layout": doc.get("layout", "cards"), "items": doc.get("items", [])}
+
+
+@api.put("/admin/endorsements")
+async def put_endorsements(body: EndorsementsIn, admin: User = Depends(require_admin)):
+    data = body.model_dump()
+    data["items"] = [{**i, "books": [b.strip() for b in i["books"] if b.strip()]} for i in data["items"]]
+    await db.settings.update_one({"_id": "endorsements"}, {"$set": {**data, "updated_by": admin.email, "updated_at": now_iso()}}, upsert=True)
+    return data
+
+
+
 def check_slug(slug):
     if slug not in PAGE_SLUGS:
         raise HTTPException(404, "Page not found")
