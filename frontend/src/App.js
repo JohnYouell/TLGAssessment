@@ -26,6 +26,8 @@ import { ThankYou, InitialCongrats, SpreadTheWord, TrainingVideos } from "@/page
 import AdminCodes from "@/pages/AdminCodes";
 import AdminVideos from "@/pages/AdminVideos";
 import AuthCallback from "@/pages/AuthCallback";
+import Account from "@/pages/Account";
+import AdminInvites from "@/pages/AdminInvites";
 import { ForgotPassword, ResetPassword } from "@/pages/PasswordReset";
 
 const guard = (el) => <ProtectedRoute>{el}</ProtectedRoute>;
@@ -67,6 +69,8 @@ function AppRoutes() {
               <Route path="/admin/verses" element={guard(<AdminVerses />)} />
               <Route path="/admin/sharing" element={guard(<AdminSharing />)} />
               <Route path="/admin/endorsements" element={guard(<AdminEndorsements />)} />
+              <Route path="/admin/invites" element={guard(<AdminInvites />)} />
+              <Route path="/account" element={guard(<Account />)} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
   );

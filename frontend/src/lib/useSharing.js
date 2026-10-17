@@ -9,4 +9,6 @@ export const useSharing = () => {
   return data;
 };
 
-export const shareBody = (s) => `${s.share_message}\n\nGet the book: ${window.location.origin}/book`;
+export const shareBody = (s, ref) => `${s.share_message}\n\nGet the book: ${window.location.origin}/book${ref ? `?ref=${ref}` : ""}`;
+
+export const trackShare = (source, channel) => api.post("/share-events", { source, channel }).catch(() => {});

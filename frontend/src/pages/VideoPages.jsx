@@ -7,7 +7,7 @@ import { useAuth } from "@/context/AuthContext";
 import { usePaywall } from "@/context/PaywallContext";
 import { VideoEmbed } from "@/components/VideoEmbed";
 import { Loader } from "@/components/Loader";
-import { useSharing, shareBody } from "@/lib/useSharing";
+import { useSharing, shareBody, trackShare } from "@/lib/useSharing";
 
 const useVideoData = () => {
   const [data, setData] = useState(null);
@@ -82,18 +82,21 @@ const OUTLINE = "inline-flex items-center gap-2 rounded-sm border-2 border-gold 
 
 export function SpreadTheWord() {
   const s = useSharing();
+  const { user } = useAuth();
   if (!s) return <Loader />;
-  const body = shareBody(s);
+  const body = shareBody(s, user?.id);
+  const track = (ch) => user && trackShare("spread", ch);
   const copy = async () => {
     await navigator.clipboard.writeText(body);
+    track("copy");
     toast.success("Message copied");
   };
   return (
     <Shell eyebrow="Spread the Word" title="Invite a Friend to Train" testId="spread-word-page">
       <p className="mx-auto max-w-2xl whitespace-pre-line break-words rounded-sm border border-line bg-surface p-6 text-left text-zinc-200" data-testid="spread-word-message">{body}</p>
       <div className="flex flex-wrap justify-center gap-4">
-        <a href={`mailto:?subject=${encodeURIComponent(s.share_subject)}&body=${encodeURIComponent(body)}`} className="btn-gold" data-testid="spread-word-email-button"><Mail className="h-4 w-4" /> Email a Friend</a>
-        <a href={`sms:?&body=${encodeURIComponent(body)}`} className={OUTLINE} data-testid="spread-word-sms-button"><MessageSquare className="h-4 w-4" /> Text / SMS</a>
+        <a href={`mailto:?subject=${encodeURIComponent(s.share_subject)}&body=${encodeURIComponent(body)}`} onClick={() => track("email")} className="btn-gold" data-testid="spread-word-email-button"><Mail className="h-4 w-4" /> Email a Friend</a>
+        <a href={`sms:?&body=${encodeURIComponent(body)}`} onClick={() => track("sms")} className={OUTLINE} data-testid="spread-word-sms-button"><MessageSquare className="h-4 w-4" /> Text / SMS</a>
         <button type="button" onClick={copy} className={OUTLINE} data-testid="spread-word-copy-button"><Copy className="h-4 w-4" /> Copy Message</button>
       </div>
     </Shell>

@@ -27,7 +27,7 @@ from assessments_config import (
 )
 import stripe
 from scorecard import build_scorecard_pdf
-from brevo import create_contact, send_scorecard_email, send_welcome_email, send_password_reset_email, send_reminder_email, send_nudge_email, send_completion_email
+from brevo import create_contact, remove_from_list, send_scorecard_email, send_welcome_email, send_password_reset_email, send_reminder_email, send_nudge_email, send_completion_email
 import hmac
 
 client = AsyncIOMotorClient(os.environ["MONGO_URL"])
@@ -72,10 +72,12 @@ class User(BaseDocument):
     final_video_watched: bool = False
     token_version: int = 0
     google_id: Optional[str] = None
+    reminders_opt_in: bool = True
 
     def public(self):
         return {"id": self.id, "name": self.name, "email": self.email,
-                "marketing_opt_in": self.marketing_opt_in, "is_admin": is_admin(self),
+                "marketing_opt_in": self.marketing_opt_in, "reminders_opt_in": self.reminders_opt_in,
+                "has_password": bool(self.password_hash), "is_admin": is_admin(self),
                 "has_access": self.has_access or is_admin(self)}
 
 
@@ -165,6 +167,22 @@ class ForgotIn(BaseModel):
 class ResetIn(BaseModel):
     token: str = Field(min_length=10, max_length=200)
     password: str = Field(min_length=6, max_length=128)
+
+
+class AccountIn(BaseModel):
+    name: str = Field(min_length=1, max_length=100)
+    marketing_opt_in: bool
+    reminders_opt_in: bool
+
+
+class PasswordChangeIn(BaseModel):
+    current_password: str = Field(default="", max_length=128)
+    new_password: str = Field(min_length=6, max_length=128)
+
+
+class ShareEventIn(BaseModel):
+    source: str = Field(pattern=r"^(spread|train)$")
+    channel: str = Field(pattern=r"^(email|sms|copy)$")
 
 
 class AnswersIn(BaseModel):
@@ -647,6 +665,58 @@ async def me(user: User = Depends(get_current_user)):
     return user.public()
 
 
+@api.put("/account")
+async def update_account(body: AccountIn, background: BackgroundTasks, user: User = Depends(get_current_user)):
+    name = body.name.strip()
+    if not name:
+        raise HTTPException(422, "Name can't be empty")
+    await db.users.update_one({"_id": ObjectId(user.id)}, {"$set": {
+        "name": name, "marketing_opt_in": body.marketing_opt_in, "reminders_opt_in": body.reminders_opt_in}})
+    if body.marketing_opt_in and not user.marketing_opt_in:
+        background.add_task(create_contact, user.email, name)
+    elif not body.marketing_opt_in and user.marketing_opt_in:
+        background.add_task(remove_from_list, user.email)
+    user.name, user.marketing_opt_in, user.reminders_opt_in = name, body.marketing_opt_in, body.reminders_opt_in
+    return user.public()
+
+
+@api.post("/account/password")
+async def change_password(body: PasswordChangeIn, response: Response, user: User = Depends(get_current_user)):
+    if user.password_hash and not verify_password(body.current_password, user.password_hash):
+        raise HTTPException(400, "Your current password is incorrect")
+    await db.users.update_one({"_id": ObjectId(user.id)}, {"$set": {"password_hash": hash_password(body.new_password)}, "$inc": {"token_version": 1}})
+    user.password_hash, user.token_version = "set", user.token_version + 1
+    set_auth_cookies(response, user)
+    return user.public()
+
+
+@api.post("/share-events")
+async def share_event(body: ShareEventIn, user: User = Depends(get_current_user)):
+    await db.share_events.insert_one({"user_id": user.id, "source": body.source, "channel": body.channel, "created_at": now_iso()})
+    return {"ok": True}
+
+
+@api.get("/account/invites")
+async def my_invites(user: User = Depends(get_current_user)):
+    return {"shares": await db.share_events.count_documents({"user_id": user.id}),
+            "joined": await db.users.count_documents({"referred_by": user.id})}
+
+
+@api.get("/admin/invites")
+async def admin_invites(admin: User = Depends(require_admin)):
+    stats = {}
+    async for d in db.share_events.aggregate([{"$group": {"_id": {"u": "$user_id", "s": "$source"}, "n": {"$sum": 1}}}]):
+        stats.setdefault(d["_id"]["u"], {"spread": 0, "train": 0, "joined": 0})[d["_id"]["s"]] = d["n"]
+    async for d in db.users.aggregate([{"$match": {"referred_by": {"$nin": [None, ""]}}}, {"$group": {"_id": "$referred_by", "n": {"$sum": 1}}}]):
+        stats.setdefault(d["_id"], {"spread": 0, "train": 0, "joined": 0})["joined"] = d["n"]
+    ids = [ObjectId(u) for u in stats if ObjectId.is_valid(u)]
+    people = {str(d["_id"]): d async for d in db.users.find({"_id": {"$in": ids}}, {"name": 1, "email": 1})}
+    rows = [{"name": people[u]["name"], "email": people[u]["email"], **s, "shares": s["spread"] + s["train"]}
+            for u, s in stats.items() if u in people]
+    rows.sort(key=lambda r: (r["joined"], r["shares"]), reverse=True)
+    return {"rows": rows}
+
+
 @api.post("/auth/refresh")
 async def refresh(request: Request, response: Response):
     token = request.cookies.get("refresh_token")
@@ -856,7 +926,7 @@ async def run_day2_reminders():
     cutoff = (datetime.now(timezone.utc) - timedelta(hours=48)).isoformat()
     done = {d["user_id"] async for d in db.progress.find({"assessment_id": 1, "status": "completed"}, {"user_id": 1})}
     sent = 0
-    async for doc in db.users.find({"created_at": {"$lte": cutoff}, "day2_reminder_sent_at": {"$exists": False}}):
+    async for doc in db.users.find({"created_at": {"$lte": cutoff}, "day2_reminder_sent_at": {"$exists": False}, "reminders_opt_in": {"$ne": False}}):
         user = User.from_mongo(doc)
         if user.id in done:
             continue
@@ -875,7 +945,7 @@ async def run_journey_nudges():
     counts = {d["_id"]: d["n"] async for d in db.progress.aggregate([
         {"$match": {"status": "completed"}}, {"$group": {"_id": "$user_id", "n": {"$sum": 1}}}])}
     sent = 0
-    async for doc in db.users.find({"last_activity_at": {"$lte": cutoff}, "nudge_sent_at": {"$exists": False}}):
+    async for doc in db.users.find({"last_activity_at": {"$lte": cutoff}, "nudge_sent_at": {"$exists": False}, "reminders_opt_in": {"$ne": False}}):
         user = User.from_mongo(doc)
         if not 1 <= counts.get(user.id, 0) < len(ASSESSMENTS):
             continue

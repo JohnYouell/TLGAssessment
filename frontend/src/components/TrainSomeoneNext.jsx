@@ -1,6 +1,7 @@
 import { Copy, Mail, MessageSquare, Users } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
+import { trackShare } from "@/lib/useSharing";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 const buildMessage = (link) =>
@@ -10,7 +11,7 @@ const ShareAction = ({ icon: Icon, label, href, onClick, testId }) => {
   const cls = "flex flex-col items-center gap-2 rounded-sm border border-line bg-surface-2 px-3 py-4 text-xs uppercase tracking-widest text-zinc-200 transition-colors duration-150 hover:border-gold hover:text-gold";
   const inner = (<><Icon className="h-6 w-6 text-gold" />{label}</>);
   return href ? (
-    <a href={href} className={cls} data-testid={testId}>{inner}</a>
+    <a href={href} onClick={onClick} className={cls} data-testid={testId}>{inner}</a>
   ) : (
     <button type="button" onClick={onClick} className={cls} data-testid={testId}>{inner}</button>
   );
@@ -23,6 +24,7 @@ export const TrainSomeoneNext = () => {
   const copy = async () => {
     try {
       await navigator.clipboard.writeText(link);
+      trackShare("train", "copy");
       toast.success("Invite link copied");
     } catch (e) {
       toast.error("Could not copy. Please copy the link manually.");
@@ -49,8 +51,8 @@ export const TrainSomeoneNext = () => {
         </div>
         <div className="grid grid-cols-3 gap-3">
           <ShareAction icon={Copy} label="Copy Link" onClick={copy} testId="invite-copy-link" />
-          <ShareAction icon={MessageSquare} label="Text / SMS" href={`sms:?&body=${encodeURIComponent(message)}`} testId="invite-share-sms" />
-          <ShareAction icon={Mail} label="Email" href={`mailto:?subject=${subject}&body=${encodeURIComponent(message)}`} testId="invite-share-email" />
+          <ShareAction icon={MessageSquare} label="Text / SMS" href={`sms:?&body=${encodeURIComponent(message)}`} onClick={() => trackShare("train", "sms")} testId="invite-share-sms" />
+          <ShareAction icon={Mail} label="Email" href={`mailto:?subject=${subject}&body=${encodeURIComponent(message)}`} onClick={() => trackShare("train", "email")} testId="invite-share-email" />
         </div>
       </DialogContent>
     </Dialog>

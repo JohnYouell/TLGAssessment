@@ -22,6 +22,7 @@ const NavLinks = ({ onNavigate }) => {
   return (
     <>
       <Link to="/dashboard" onClick={onNavigate} className="nav-link" data-testid="nav-dashboard">Dashboard</Link>
+      <Link to="/account" onClick={onNavigate} className="nav-link" data-testid="nav-account">My Account</Link>
       <button type="button" onClick={handleSignOut} className="nav-link text-left" data-testid="nav-sign-out">Sign Out</button>
     </>
   );

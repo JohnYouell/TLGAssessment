@@ -19,7 +19,7 @@ export default function Register() {
   const { user, register } = useAuth();
   const navigate = useNavigate();
   const [params] = useSearchParams();
-  const [form, setForm] = useState({ name: "", email: "", password: "", marketing_opt_in: false, referred_by: params.get("ref") || null });
+  const [form, setForm] = useState({ name: "", email: "", password: "", marketing_opt_in: false, referred_by: params.get("ref") || localStorage.getItem("lg-ref") || null });
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   if (user && !busy) return <Navigate to="/dashboard" replace />;

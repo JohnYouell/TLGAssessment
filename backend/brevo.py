@@ -35,6 +35,10 @@ async def create_contact(email, full_name):
     return await _post("/contacts", payload)
 
 
+async def remove_from_list(email):
+    return await _post(f"/contacts/lists/{int(os.environ['BREVO_MARKETING_LIST_ID'])}/contacts/remove", {"emails": [email]})
+
+
 def _row(cells, bold=False, bg="#ffffff"):
     tds = "".join(
         f'<td style="padding:10px 12px;border-bottom:1px solid #e4e4e7;{"font-weight:700;" if bold else ""}{c[1]}">{c[0]}</td>'

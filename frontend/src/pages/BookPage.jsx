@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { ArrowRight, BookOpen } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { useSharing } from "@/lib/useSharing";
 import { Loader } from "@/components/Loader";
 import { api } from "@/lib/api";
@@ -9,7 +9,12 @@ import { Endorsements } from "@/components/Endorsements";
 
 export default function BookPage() {
   const s = useSharing();
+  const [params] = useSearchParams();
+  const ref = params.get("ref") || localStorage.getItem("lg-ref");
   const [endo, setEndo] = useState(null);
+  useEffect(() => {
+    if (params.get("ref")) localStorage.setItem("lg-ref", params.get("ref"));
+  }, [params]);
   useEffect(() => {
     api.get("/endorsements").then((r) => setEndo(r.data)).catch(() => {});
   }, []);
@@ -32,7 +37,7 @@ export default function BookPage() {
           ) : (
             <span className="inline-flex items-center gap-2 rounded-sm border border-line px-6 py-3 font-heading text-sm uppercase tracking-[0.18em] text-zinc-400" data-testid="book-coming-soon">Purchase link coming soon</span>
           )}
-          <Link to="/register" className="text-link inline-flex items-center gap-2" data-testid="book-join-link">Start the assessments <ArrowRight className="h-4 w-4" /></Link>
+          <Link to={ref ? `/register?ref=${encodeURIComponent(ref)}` : "/register"} className="text-link inline-flex items-center gap-2" data-testid="book-join-link">Start the assessments <ArrowRight className="h-4 w-4" /></Link>
         </div>
       </div>
     </div>

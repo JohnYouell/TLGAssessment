@@ -25,7 +25,7 @@ const Tile = ({ icon: Icon, title, text, to, cta, locked, onLocked, testId }) =>
   </div>
 );
 
-const ADMIN_LINKS = [["/admin/verses", "Scripture Banner", "admin-verses-link"], ["/admin/pages/about", "About Page", "admin-about-link"], ["/admin/pages/contact", "Contact Page", "admin-contact-link"], ["/admin/codes", "Discount Codes", "admin-codes-link"], ["/admin/videos", "Videos", "admin-videos-link"], ["/admin/sharing", "Book & Sharing", "admin-sharing-link"], ["/admin/endorsements", "Endorsements", "admin-endorsements-link"]];
+const ADMIN_LINKS = [["/admin/verses", "Scripture Banner", "admin-verses-link"], ["/admin/pages/about", "About Page", "admin-about-link"], ["/admin/pages/contact", "Contact Page", "admin-contact-link"], ["/admin/codes", "Discount Codes", "admin-codes-link"], ["/admin/videos", "Videos", "admin-videos-link"], ["/admin/sharing", "Book & Sharing", "admin-sharing-link"], ["/admin/endorsements", "Endorsements", "admin-endorsements-link"], ["/admin/invites", "Invites", "admin-invites-link"]];
 
 const AdminTools = () => (
   <div className="mt-16 border-t border-line pt-8" data-testid="admin-tools">
