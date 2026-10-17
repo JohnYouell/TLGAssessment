@@ -22,6 +22,10 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   useEffect(() => {
+    if (window.location.hash?.includes("session_id=")) {
+      setUser(false);
+      return;
+    }
     loadMe();
   }, [loadMe]);
 
@@ -39,7 +43,7 @@ export const AuthProvider = ({ children }) => {
     setUser(false);
   };
 
-  return <AuthContext.Provider value={{ user, login, register, logout, reload: loadMe }}>{children}</AuthContext.Provider>;
+  return <AuthContext.Provider value={{ user, setUser, login, register, logout, reload: loadMe }}>{children}</AuthContext.Provider>;
 };
 
 export const useAuth = () => useContext(AuthContext);

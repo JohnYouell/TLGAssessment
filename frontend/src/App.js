@@ -25,6 +25,8 @@ import { PaymentSuccess, PaymentCancel } from "@/pages/Payment";
 import { ThankYou, InitialCongrats, SpreadTheWord, TrainingVideos } from "@/pages/VideoPages";
 import AdminCodes from "@/pages/AdminCodes";
 import AdminVideos from "@/pages/AdminVideos";
+import AuthCallback from "@/pages/AuthCallback";
+import { ForgotPassword, ResetPassword } from "@/pages/PasswordReset";
 
 const guard = (el) => <ProtectedRoute>{el}</ProtectedRoute>;
 
@@ -36,18 +38,15 @@ const ScrollToTop = () => {
   return null;
 };
 
-function App() {
+function AppRoutes() {
+  const location = useLocation();
+  if (location.hash?.includes("session_id=")) return <AuthCallback />;
   return (
-    <div className="App flex min-h-screen flex-col bg-ink text-white">
-      <BrowserRouter>
-        <AuthProvider>
-          <PaywallProvider>
-          <ScrollToTop />
-          <Header />
-          <main className="flex-1">
             <Routes>
               <Route path="/" element={<Welcome />} />
               <Route path="/login" element={<Login />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/register" element={<Register />} />
               <Route path="/welcome" element={guard(<ThankYou />)} />
               <Route path="/congrats/initial" element={guard(<InitialCongrats />)} />
@@ -70,6 +69,19 @@ function App() {
               <Route path="/admin/endorsements" element={guard(<AdminEndorsements />)} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
+  );
+}
+
+function App() {
+  return (
+    <div className="App flex min-h-screen flex-col bg-ink text-white">
+      <BrowserRouter>
+        <AuthProvider>
+          <PaywallProvider>
+          <ScrollToTop />
+          <Header />
+          <main className="flex-1">
+            <AppRoutes />
           </main>
           <Footer />
           <Toaster theme="dark" position="top-center" />

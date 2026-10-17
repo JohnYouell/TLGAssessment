@@ -3,6 +3,7 @@ import { Link, Navigate, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { formatApiError } from "@/lib/api";
 import { AuthShell } from "@/components/AuthShell";
+import { GoogleButton } from "@/components/GoogleButton";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -41,6 +42,7 @@ export default function Register() {
   return (
     <AuthShell eyebrow="Join the gym" title="Create Account" testId="register-page">
       <form onSubmit={submit} className="space-y-6">
+        <GoogleButton referredBy={form.referred_by} testId="register-google-button" />
         <Field id="name" label="Full Name" value={form.name} onChange={set("name")} testId="register-name-input" />
         <Field id="email" label="Email" type="email" value={form.email} onChange={set("email")} testId="register-email-input" />
         <Field id="password" label="Password (min 6 characters)" type="password" minLength={6} value={form.password} onChange={set("password")} testId="register-password-input" />

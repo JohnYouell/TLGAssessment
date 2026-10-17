@@ -9,7 +9,11 @@ import logging
 from datetime import datetime, timezone, timedelta
 from typing import Annotated, Dict, Optional
 
+import hashlib
+import secrets
+
 import bcrypt
+import httpx
 import jwt
 from bson import ObjectId
 from fastapi import FastAPI, APIRouter, HTTPException, Request, Response, Depends, BackgroundTasks
@@ -23,7 +27,7 @@ from assessments_config import (
 )
 import stripe
 from scorecard import build_scorecard_pdf
-from brevo import create_contact, send_scorecard_email, send_welcome_email, send_reminder_email, send_nudge_email, send_completion_email
+from brevo import create_contact, send_scorecard_email, send_welcome_email, send_password_reset_email, send_reminder_email, send_nudge_email, send_completion_email
 import hmac
 
 client = AsyncIOMotorClient(os.environ["MONGO_URL"])
@@ -66,6 +70,8 @@ class User(BaseDocument):
     referred_by: Optional[str] = None
     has_access: bool = False
     final_video_watched: bool = False
+    token_version: int = 0
+    google_id: Optional[str] = None
 
     def public(self):
         return {"id": self.id, "name": self.name, "email": self.email,
@@ -147,6 +153,20 @@ class LoginIn(BaseModel):
     password: str
 
 
+class GoogleIn(BaseModel):
+    session_id: str = Field(min_length=1, max_length=500)
+    referred_by: Optional[str] = Field(default=None, max_length=64)
+
+
+class ForgotIn(BaseModel):
+    email: EmailStr
+
+
+class ResetIn(BaseModel):
+    token: str = Field(min_length=10, max_length=200)
+    password: str = Field(min_length=6, max_length=128)
+
+
 class AnswersIn(BaseModel):
     answers: Dict[str, int]
 
@@ -164,15 +184,25 @@ def verify_password(p, h):
     return bcrypt.checkpw(p.encode(), h.encode())
 
 
-def make_token(user_id, ttype, delta):
-    payload = {"sub": user_id, "type": ttype, "exp": datetime.now(timezone.utc) + delta}
+def make_token(user_id, ttype, delta, version):
+    payload = {"sub": user_id, "type": ttype, "v": version, "exp": datetime.now(timezone.utc) + delta}
     return jwt.encode(payload, os.environ["JWT_SECRET"], algorithm=JWT_ALGORITHM)
 
 
-def set_auth_cookies(response: Response, user_id: str):
+def set_auth_cookies(response: Response, user: "User"):
     opts = dict(httponly=True, secure=True, samesite="none", path="/")
-    response.set_cookie("access_token", make_token(user_id, "access", timedelta(minutes=15)), max_age=900, **opts)
-    response.set_cookie("refresh_token", make_token(user_id, "refresh", timedelta(days=7)), max_age=604800, **opts)
+    response.set_cookie("access_token", make_token(user.id, "access", timedelta(minutes=15), user.token_version), max_age=900, **opts)
+    response.set_cookie("refresh_token", make_token(user.id, "refresh", timedelta(days=7), user.token_version), max_age=604800, **opts)
+
+
+async def user_from_token(token, ttype):
+    payload = decode(token, ttype)
+    user = User.from_mongo(await db.users.find_one({"_id": ObjectId(payload["sub"])}))
+    if not user:
+        raise HTTPException(401, "User not found")
+    if payload.get("v", 0) != user.token_version:
+        raise HTTPException(401, "Session expired")
+    return user
 
 
 def decode(token, ttype):
@@ -184,7 +214,7 @@ def decode(token, ttype):
         raise HTTPException(401, "Invalid token")
     if payload.get("type") != ttype:
         raise HTTPException(401, "Invalid token type")
-    return payload["sub"]
+    return payload
 
 
 async def touch(user_id):
@@ -198,10 +228,7 @@ async def get_current_user(request: Request) -> User:
         token = auth[7:]
     if not token:
         raise HTTPException(401, "Not authenticated")
-    user = User.from_mongo(await db.users.find_one({"_id": ObjectId(decode(token, "access"))}))
-    if not user:
-        raise HTTPException(401, "User not found")
-    return user
+    return await user_from_token(token, "access")
 
 
 # ---------- Auth routes ----------
@@ -218,7 +245,7 @@ async def register(body: RegisterIn, response: Response, background: BackgroundT
     background.add_task(send_welcome_email, email, user.name)
     if user.marketing_opt_in:
         background.add_task(create_contact, email, user.name)
-    set_auth_cookies(response, user.id)
+    set_auth_cookies(response, user)
     return user.public()
 
 
@@ -233,12 +260,72 @@ async def login(body: LoginIn, request: Request, response: Response):
             raise HTTPException(429, "Too many failed attempts. Try again in 15 minutes.")
         await db.login_attempts.delete_one({"identifier": ident})
     user = User.from_mongo(await db.users.find_one({"email": email}))
-    if not user or not verify_password(body.password, user.password_hash):
+    if not user or not user.password_hash or not verify_password(body.password, user.password_hash):
         await db.login_attempts.update_one({"identifier": ident}, {"$inc": {"count": 1}, "$set": {"last": now_iso()}}, upsert=True)
         raise HTTPException(401, "Invalid email or password")
     await db.login_attempts.delete_one({"identifier": ident})
     await touch(user.id)
-    set_auth_cookies(response, user.id)
+    set_auth_cookies(response, user)
+    return user.public()
+
+
+@api.post("/auth/google")
+async def google_login(body: GoogleIn, response: Response, background: BackgroundTasks):
+    async with httpx.AsyncClient(timeout=15.0) as c:
+        r = await c.get("https://demobackend.emergentagent.com/auth/v1/env/oauth/session-data", headers={"X-Session-ID": body.session_id})
+    if r.status_code != 200:
+        raise HTTPException(401, "Google sign-in failed. Please try again.")
+    info = r.json()
+    email = info["email"].lower()
+    user = User.from_mongo(await db.users.find_one({"email": email}))
+    is_new = user is None
+    if is_new:
+        user = User(name=(info.get("name") or email.split("@")[0]).strip(), email=email, marketing_opt_in=True,
+                    created_at=now_iso(), last_activity_at=now_iso(), referred_by=body.referred_by, google_id=info.get("id"))
+        user.id = str((await db.users.insert_one(user.to_mongo())).inserted_id)
+        logger.info("Registered Google user %s", email)
+        background.add_task(send_welcome_email, email, user.name)
+        background.add_task(create_contact, email, user.name)
+    else:
+        await db.users.update_one({"_id": ObjectId(user.id)}, {"$set": {"google_id": info.get("id")}})
+        await touch(user.id)
+    set_auth_cookies(response, user)
+    return {**user.public(), "is_new": is_new}
+
+
+def reset_hash(token):
+    return hashlib.sha256(token.encode()).hexdigest()
+
+
+@api.post("/auth/forgot-password")
+async def forgot_password(body: ForgotIn, background: BackgroundTasks):
+    email = body.email.lower()
+    user = User.from_mongo(await db.users.find_one({"email": email}))
+    hour_ago = (datetime.now(timezone.utc) - timedelta(hours=1)).isoformat()
+    recent = await db.password_reset_tokens.count_documents({"email": email, "created_at": {"$gte": hour_ago}})
+    if user and recent < 3:
+        token = secrets.token_urlsafe(32)
+        await db.password_reset_tokens.insert_one({
+            "token_hash": reset_hash(token), "user_id": user.id, "email": email, "used": False,
+            "created_at": now_iso(), "expires_at": datetime.now(timezone.utc) + timedelta(hours=1)})
+        background.add_task(send_password_reset_email, email, user.name, token)
+    return {"ok": True}
+
+
+@api.post("/auth/reset-password")
+async def reset_password(body: ResetIn, response: Response):
+    doc = await db.password_reset_tokens.find_one({"token_hash": reset_hash(body.token)})
+    expires = doc and doc["expires_at"].replace(tzinfo=doc["expires_at"].tzinfo or timezone.utc)
+    if not doc or doc["used"] or expires < datetime.now(timezone.utc):
+        raise HTTPException(400, "This reset link is invalid or has expired. Please request a new one.")
+    claimed = await db.password_reset_tokens.update_one({"_id": doc["_id"], "used": False}, {"$set": {"used": True}})
+    if not claimed.modified_count:
+        raise HTTPException(400, "This reset link is invalid or has expired. Please request a new one.")
+    await db.users.update_one({"_id": ObjectId(doc["user_id"])}, {"$set": {"password_hash": hash_password(body.password)}, "$inc": {"token_version": 1}})
+    await db.password_reset_tokens.update_many({"user_id": doc["user_id"]}, {"$set": {"used": True}})
+    await db.login_attempts.delete_one({"identifier": doc["email"]})
+    user = User.from_mongo(await db.users.find_one({"_id": ObjectId(doc["user_id"])}))
+    set_auth_cookies(response, user)
     return user.public()
 
 
@@ -562,10 +649,7 @@ async def refresh(request: Request, response: Response):
     token = request.cookies.get("refresh_token")
     if not token:
         raise HTTPException(401, "No refresh token")
-    user_id = decode(token, "refresh")
-    if not await db.users.find_one({"_id": ObjectId(user_id)}):
-        raise HTTPException(401, "User not found")
-    set_auth_cookies(response, user_id)
+    set_auth_cookies(response, await user_from_token(token, "refresh"))
     return {"ok": True}
 
 
@@ -845,6 +929,8 @@ app.add_middleware(
 async def startup():
     await db.users.create_index("email", unique=True)
     await db.login_attempts.create_index("identifier")
+    await db.password_reset_tokens.create_index("expires_at", expireAfterSeconds=0)
+    await db.password_reset_tokens.create_index("token_hash")
     await db.progress.create_index([("user_id", 1), ("assessment_id", 1)], unique=True)
     await db.assessments.delete_many({"_id": {"$nin": list(ASSESS_BY_ID)}})
     for a in ASSESSMENTS:

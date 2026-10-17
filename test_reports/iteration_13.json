@@ -1,0 +1,25 @@
+{
+  "summary": "Tested only the Endorsements feature, backend and frontend. Backend: 10/10 pytest tests pass. These cover the public GET default, PUT returning 401 when signed out and 403 for a non-admin, 422 for a bad layout or empty/whitespace-only text or name, trimming of blank book entries, persistence, and no _id leaking. Frontend: everything requested works. Dashboard link goes to /admin/endorsements. The 3 layout buttons switch the preview, and with no rows it shows [Placeholder] samples. Add, reorder (the up button on the first row and the down button on the last row are disabled), delete and save all work, with a success toast, and the data persists after reload (books cleaned to 'Book One\\nBook Two'). An empty name shows the error toast. /book hides the section when there are no items and shows Spotlight, List and Cards correctly. Spotlight prev/next cycle and wrap around (1/2 -> 2/2 -> 1/2). Books show as 'Author of Book One, Book Two'. A non-admin gets no admin link and is redirected from /admin/endorsements to /dashboard. At 390px mobile the list and cards layouts don't overflow (scrollWidth 390). One design bug: in the Cards layout, empty grid cells show as a solid grey block.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "/book and admin preview, Cards layout (Endorsements.jsx Cards)", "issues": ["The grid uses 'gap-px bg-line' for its dividers. When the number of items isn't a multiple of the column count (3 columns on lg, 2 on md), the empty cells show the container's bg-line color (rgb(39,39,42)) as a large solid grey rectangle. Seen with 4 items on desktop. Fix: use per-card borders (e.g. border-line with negative margins / divide utilities) instead of gap+bg, or put a bg-surface wrapper behind the grid so unused cells match the page."]}
+    ]
+  },
+  "test_report_links": ["/app/backend/tests/test_lords_gym_endorsements.py", "/app/test_reports/pytest/endorsements.xml"],
+  "action_items": ["Fix the grey empty-cell block in the Cards layout when the item count doesn't fill the last row"],
+  "critical_code_review_comments": [
+    "AdminEndorsements.jsx: api.get('/endorsements') has no .catch. If it fails, rows stay null and the page shows the Loader forever. Add an error state or toast.",
+    "Spotlight keeps index state in useState(0) and uses i % length. That's fine, but the admin preview doesn't reset the index when rows are deleted, so the counter can jump. Minor.",
+    "Backend: max_length is set on fields, but nothing limits the length of each book title string. Consider Field(max_length=200) per book."
+  ],
+  "updated_files": ["/app/backend/tests/test_lords_gym_endorsements.py"],
+  "success_rate": {"backend": "100%", "frontend": "100% functional (1 design issue)"},
+  "seed_data_creation": "Seeded a temporary non-admin test_endo_member@example.com in Mongo (bcrypt) and deleted it afterwards. Endorsements reset to {layout:'cards', items:[]}, verified via GET.",
+  "test_credentials": "Admin test_admin@example.com / test1234 (provided by main agent). /app/memory/test_credentials.md does not list this account.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Endorsements are stored in db.settings _id='endorsements'. The pytest module's admin fixture resets the data to cards/[] on teardown. It needs the member test_endo_member@example.com/test1234 to be seeded first, otherwise the 403 test is skipped."
+}

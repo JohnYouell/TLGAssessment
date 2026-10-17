@@ -19,9 +19,9 @@ const Byline = ({ e }) => (
 );
 
 const Cards = ({ items }) => (
-  <div className="grid gap-px bg-line md:grid-cols-2 lg:grid-cols-3" data-testid="endorsements-cards">
+  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3" data-testid="endorsements-cards">
     {items.map((e, i) => (
-      <figure key={i} className="flex flex-col justify-between bg-surface p-8 transition-colors duration-150 hover:bg-surface-2" data-testid={`endorsement-${i}`}>
+      <figure key={i} className="flex flex-col justify-between border border-line bg-surface p-8 transition-colors duration-150 hover:border-gold" data-testid={`endorsement-${i}`}>
         <div>
           <Quote className="h-7 w-7 text-gold" />
           <blockquote className="mt-4 text-base leading-relaxed text-zinc-200">{e.text}</blockquote>

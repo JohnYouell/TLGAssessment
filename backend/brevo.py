@@ -189,6 +189,21 @@ async def send_completion_email(email, name, final_score, max_score):
     return await _send(email, name, "Course Completed. You Finished the Work!", completion_html(final_score, max_score))
 
 
+def reset_html(token):
+    return branded_html(
+        "Reset your password.",
+        [
+            "We received a request to reset the password for your Lord’s Gym account. Click the button below to choose a new password. This link works once and expires in 1 hour.",
+            "If you didn’t ask for this, you can safely ignore this email. Your password won’t change.",
+        ],
+        "RESET MY PASSWORD", _site(f"/reset-password?token={token}"),
+    )
+
+
+async def send_password_reset_email(email, name, token):
+    return await _send(email, name, "Reset your Lord's Gym password", reset_html(token))
+
+
 async def send_scorecard_email(email, name, data, pdf_bytes):
     payload = {
         "sender": {"name": os.environ["BREVO_SENDER_NAME"], "email": os.environ["BREVO_SENDER_EMAIL"]},
