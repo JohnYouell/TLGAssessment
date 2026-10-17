@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { SocialLinks } from "@/components/SocialLinks";
 
 const linkCls = "font-heading text-sm uppercase tracking-[0.18em] text-white transition-colors duration-150 hover:text-gold";
 
@@ -10,6 +11,7 @@ export const Footer = () => (
         <Link to="/contact" className={linkCls} data-testid="footer-contact-link">Contact</Link>
         <a href="mailto:support@newlifeokc.org?subject=The%20Lord's%20Gym%20Support" className={linkCls} data-testid="footer-support-link">Support</a>
       </nav>
+      <SocialLinks />
       <p className="text-xs text-zinc-400" data-testid="footer-copyright">
         &copy; {new Date().getFullYear()} The Lord&apos;s Gym. All rights reserved.
       </p>
