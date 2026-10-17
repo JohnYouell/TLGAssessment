@@ -23,7 +23,7 @@ export default function Welcome({ firstVisit = false }) {
             <h1 className="mt-5 font-heading text-4xl font-bold uppercase leading-[0.95] text-white sm:text-5xl lg:text-6xl" data-testid="welcome-title">
               Become Like Christ.<br /><span className="text-gold">One rep at a time.</span>
             </h1>
-            <p className="mt-6 max-w-lg text-base text-zinc-300 max-md:max-w-[240px] md:text-lg">
+            <p className="mt-6 max-w-lg text-base text-zinc-300 max-md:max-w-[230px] md:text-lg">
               A 7-part assessment journey<br className="md:hidden" /> accompanying <em>The Lord's Gym: Discipleship Training, One Rep at a Time.</em> Measure where you stand, put in the work, and see how far you've come.
             </p>
             <div className="mt-10 flex flex-wrap items-center gap-6">
