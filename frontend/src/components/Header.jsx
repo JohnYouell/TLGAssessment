@@ -35,7 +35,7 @@ export const Header = () => {
     <header data-testid="site-header" className="site-header relative z-40 text-white">
       <div className="relative mx-auto flex max-w-7xl items-center justify-between gap-4 px-5 py-[clamp(12px,1.6vw,25px)] sm:px-8">
         <Link to="/" className="flex min-w-0 items-center gap-3" data-testid="header-logo-link">
-          <img src="/logo-white.png" alt="The Lord's Gym logo" className="h-auto max-h-[clamp(48px,6.5vw,83px)] w-auto shrink-0" data-testid="header-logo" />
+          <img src="/logo-gold-header.png" alt="The Lord's Gym logo" className="h-auto max-h-[clamp(48px,6.5vw,83px)] w-auto shrink-0" data-testid="header-logo" />
           <span className="byline text-[clamp(0.75rem,1.6vw,1.3rem)] leading-tight" data-testid="header-byline">
             Discipleship Training,<br />One Rep at a Time
           </span>
