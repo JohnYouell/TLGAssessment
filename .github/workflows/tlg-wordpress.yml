@@ -1,0 +1,56 @@
+name: TLG WordPress payment regression checks
+on:
+  push:
+    branches: ["fix/tlg-wordpress-payments-20261020"]
+  pull_request:
+    paths: ["wordpress/**", ".github/workflows/tlg-wordpress.yml"]
+permissions:
+  contents: read
+jobs:
+  regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: tlg-test-only
+          MYSQL_DATABASE: tlgtest
+        ports: ["3306:3306"]
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost -ptlg-test-only"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=12
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - name: Check PHP requirements
+        run: |
+          php --version
+          php -r 'exit(extension_loaded("mysqli") ? 0 : 1);'
+      - name: PHP syntax checks
+        run: find wordpress -name '*.php' -print0 | xargs -0 -n1 php -l
+      - name: Download disposable WordPress
+        run: |
+          curl --fail --silent --show-error --location https://wordpress.org/latest.tar.gz --output "$RUNNER_TEMP/wordpress.tar.gz"
+          tar -xzf "$RUNNER_TEMP/wordpress.tar.gz" -C "$RUNNER_TEMP"
+      - name: Run WordPress and MySQL regression suite
+        env:
+          TLG_WP_DIR: ${{ runner.temp }}/wordpress
+        run: php wordpress/tests/regression.php
+      - name: Package four-file update
+        run: |
+          mkdir -p dist/tlg-assessments/includes
+          cp wordpress/tlg-assessments/tlg-assessments.php dist/tlg-assessments/
+          cp wordpress/tlg-assessments/includes/core.php wordpress/tlg-assessments/includes/accounts.php wordpress/tlg-assessments/includes/content-payments.php dist/tlg-assessments/includes/
+          cp wordpress/UPDATE-INSTRUCTIONS.md dist/
+          cd dist
+          zip -r TLG-Assessments-1.0.1-FILE-UPDATE.zip tlg-assessments UPDATE-INSTRUCTIONS.md
+          sha256sum TLG-Assessments-1.0.1-FILE-UPDATE.zip > SHA256SUMS.txt
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: TLG-Assessments-1.0.1-FILE-UPDATE
+          path: |
+            dist/TLG-Assessments-1.0.1-FILE-UPDATE.zip
+            dist/SHA256SUMS.txt
+          retention-days: 30
