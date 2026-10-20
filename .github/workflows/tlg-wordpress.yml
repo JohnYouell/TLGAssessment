@@ -1,7 +1,5 @@
 name: TLG WordPress payment regression checks
 on:
-  push:
-    branches: ["fix/tlg-wordpress-payments-20261020"]
   pull_request:
     paths: ["wordpress/**", ".github/workflows/tlg-wordpress.yml"]
 permissions:

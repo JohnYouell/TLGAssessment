@@ -27,7 +27,7 @@ function tlg_fixture_stripe($args,$path) {
             check($f['keys'][$key]['body']===$body,'A retry changed its original idempotent request body');
             $s=$f['keys'][$key]['response'];
         } else {
-            ++$f['creates']; $id='cs_test_fixture'.$f['creates'];
+            ++$f['creates']; $id='cs_test_fixture'.get_current_user_id().'_'.$f['creates'];
             $s=array('id'=>$id,'url'=>'https://checkout.stripe.com/c/pay/'.$id,'mode'=>'payment','currency'=>'usd',
                 'amount_total'=>(int)$body['line_items'][0]['price_data']['unit_amount'],'metadata'=>$body['metadata'],
                 'status'=>'open','payment_status'=>'unpaid');
