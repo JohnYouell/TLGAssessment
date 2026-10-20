@@ -36,6 +36,8 @@ jobs:
         env:
           TLG_WP_DIR: ${{ runner.temp }}/wordpress
         run: php wordpress/tests/regression.php
+      - name: Verify direct download ZIP
+        run: python3 wordpress/tests/verify_archive.py
       - name: Package four-file update
         run: |
           mkdir -p dist/tlg-assessments/includes
